@@ -405,7 +405,7 @@ async function signUpWithPassword(email, password){
   if (error) throw error;
 }
 
-loginBtn?elemento?.addEventListener"click", async ()=>{
+loginBtn?.addEventListener("click", async () => {
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
   if (!email || !pass) return alert("Preencha email e senha.");
@@ -417,7 +417,7 @@ loginBtn?elemento?.addEventListener"click", async ()=>{
   }
 });
 
-signupBtn?elemento?.addEventListener"click", async ()=>{
+signupBtn?.addEventListener("click", async () => {
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
   if (!email || !pass) return alert("Preencha email e senha.");
@@ -430,7 +430,7 @@ signupBtn?elemento?.addEventListener"click", async ()=>{
 });
 
 // Enter no campo de senha = entrar
-loginPass?elemento?.addEventListener"keydown", (e)=>{
+loginPass?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") loginBtn?.click();
 });
 
@@ -480,10 +480,10 @@ function initSupabase(){
     else alert("Conta criada! Agora clique em Entrar.");
   }
 
-  loginBtn?elemento?.addEventListener"click", doLogin);
-  signupBtn?elemento?.addEventListener"click", doSignup);
+ loginBtn?.addEventListener("click", doLogin);
+signupBtn?.addEventListener("click", doSignup);
 
-  loginPass?elemento?.addEventListener"keydown", (e)=>{
+  loginPass?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") doLogin();
   });
 
