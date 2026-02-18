@@ -391,6 +391,8 @@ const list = colEl.querySelector(".cards");
 list.addEventListener("dragover", (e)=> e.preventDefault());
 list.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
 
+colEl.addEventListener("dragover", (e)=> e.preventDefault());
+colEl.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
 
       // Cards
       for (const id of state.columns[col.id]){
