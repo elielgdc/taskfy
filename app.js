@@ -404,6 +404,7 @@ async function signUpWithPassword(email, password){
   if (error) throw error;
 }
 
+
 let signingUp = false;
 
 signupBtn?.addEventListener("click", async () => {
@@ -487,11 +488,11 @@ function initSupabase(){
     else alert("Conta criada! Agora clique em Entrar.");
   }
 
- loginBtn?.addEventListener("click", doLogin);
-signupBtn?.addEventListener("click", doSignup);
+//  loginBtn?.addEventListener("click", doLogin); // (desativado: handlers globais já cuidam)
+// signupBtn?.addEventListener("click", doSignup); // (desativado: handlers globais já cuidam)
 
   loginPass?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") doLogin();
+//     if (e.key === "Enter") doLogin(); // (desativado: handlers globais já cuidam)
   });
 
   // sessão atual
@@ -615,6 +616,7 @@ async function signOut(){
 
   // Render board
   function render(){
+    if (!board) return;
     board.innerHTML = "";
 
     for (const col of COLS){
@@ -1134,6 +1136,7 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
   }
 
   function renderTimeline(){
+    if (!timelineEl) return;
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
     timelineEl.innerHTML = "";
@@ -1193,6 +1196,7 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
   });
 
   function renderArchivedList(){
+    if (!archList) return;
     archList.innerHTML = "";
     if (!state.archived.length){
       archList.innerHTML = `<div class="muted" style="font-weight:1000;font-size:12px;">Nenhum card arquivado.</div>`;
