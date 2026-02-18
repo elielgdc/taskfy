@@ -375,7 +375,10 @@ window.onerror = (msg, src, line, col, err) => {
         // abre a janela, mas NÃO cria card ainda
         openCard(null, col.id);
         // opcional: já foca no campo de detalhes
-        setTimeout(() => details?.focus?.(), 0);
+        setTimeout(() => {
+  modalTitle?.focus?.();
+  modalTitle?.select?.();
+}, 0);
       });
       input.addEventListener("keydown", (e)=>{
         if (e.key === "Enter"){
