@@ -462,6 +462,23 @@
       display:flex;flex-direction:column;gap:10px;
       max-height:420px; overflow:auto; padding-right:6px;
     }
+
+  .create-card-btn{
+  margin-bottom:12px;
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:0;
+  background:linear-gradient(135deg,#2ecc71,#27ae60);
+  color:#0b1a12;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.create-card-btn:hover{
+  filter:brightness(1.05);
+}
     .entry{display:flex;gap:10px;align-items:flex-start}
     .bub{
       width:28px;height:28px;border-radius:999px;
@@ -682,7 +699,9 @@
               <input class="input" id="newNote" placeholder="Escreva uma anotação neste card..." />
               <button class="btn primary" id="addNoteBtn">Enviar</button>
             </div>
-
+<button id="createCardBtn" class="create-card-btn">
+  Criar card
+</button>
             <div class="timeline" id="timeline"></div>
           </div>
 
@@ -715,6 +734,7 @@
   
 </body>
 </html>
+
 
 
 
