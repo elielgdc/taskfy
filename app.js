@@ -847,8 +847,9 @@ function closeCard(){
     }
   }
 
-  document.getElementById("createCardBtn")
-  ?.addEventListener("click", tryCreateCard);
+document.getElementById("createCardBtn")
+  ?.addEventListener("click", closeCard);
+
   
   // Start
   save();
