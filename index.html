@@ -584,6 +584,21 @@
 .modalTitleInput:focus{
   background: rgba(255,255,255,.05);
 }
+    .modalTitleInput:focus{
+  background: rgba(255,255,255,.05);
+}
+
+.modal-footer{
+  position: sticky;
+  bottom: 0;
+  padding: 18px;
+  background: linear-gradient(to top, rgba(15,23,42,.98), rgba(15,23,42,.85));
+  border-top: 1px solid rgba(148,163,184,.18);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 5;
+}
+
   </style>
 </head>
 <body>
@@ -699,9 +714,7 @@
               <input class="input" id="newNote" placeholder="Escreva uma anotação neste card..." />
               <button class="btn primary" id="addNoteBtn">Enviar</button>
             </div>
-<button id="createCardBtn" class="create-card-btn">
-  Criar card
-</button>
+
             <div class="timeline" id="timeline"></div>
           </div>
 
@@ -709,6 +722,11 @@
             Arraste cards entre colunas. Arraste para “Arquivado” para esconder do quadro.
           </div>
         </div>
+      </div>
+       <div class="modal-footer">
+        <button id="createCardBtn" class="create-card-btn">
+          Criar card
+        </button>
       </div>
     </div>
   </div>
@@ -734,6 +752,7 @@
   
 </body>
 </html>
+
 
 
 
