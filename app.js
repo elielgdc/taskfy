@@ -456,10 +456,10 @@ function initSupabase(){
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ---- Login Gate (email/senha)
+  const loginBtn = document.getElementById("loginBtn");
+  const signupBtn = document.getElementById("signupBtn");
   const loginEmail = document.getElementById("loginEmail");
-  const loginPass  = document.getElementById("loginPass");
-  const loginBtn   = document.getElementById("loginBtn");
-  const signupBtn  = document.getElementById("signupBtn");
+  const loginPass = document.getElementById("loginPass");
 
   async function doLogin(){
     const email = (loginEmail?.value || "").trim();
