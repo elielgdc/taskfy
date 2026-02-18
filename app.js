@@ -4,7 +4,7 @@ window.onerror = (msg, src, line, col, err) => {
   console.error(err || msg);
 };
 
-(async () => {
+(() => {
   const STORAGE_KEY = "ummense_like_kanban_dark_v1";
 
   const COLS = [
@@ -15,77 +15,6 @@ window.onerror = (msg, src, line, col, err) => {
     { id:"done",    title:"Concluído", icon:"🏁" },
   ];
 
-   // =====================
-// Supabase (Login)
-// =====================
-const SUPABASE_URL = "https://bknethktrrecdfllndyo.supabase.co/";
-const SUPABASE_ANON_KEY = "sb_publishable_9v3vkdV27tpLF059ehpi8A_trs8Lymo";
-let sb = null;
-let sbUser = null;
-
-const authBtn = document.getElementById("authBtn");
-const authStatus = document.getElementById("authStatus");
-
-function setAuthUI(){
-  if (!authBtn) return;
-
-  if (sbUser){
-    authBtn.textContent = "Sair";
-    authBtn.title = "Sair da conta";
-    if (authStatus) authStatus.textContent = sbUser.email || "Logado";
-  } else {
-    authBtn.textContent = "Entrar";
-    authBtn.title = "Entrar para sincronizar";
-    if (authStatus) authStatus.textContent = "";
-  }
-}
-
-function initSupabase(){
-  if (!window.supabase) return;
-  if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // sessão atual
-  sb.auth.getSession().then(({ data })=>{
-    sbUser = data?.session?.user || null;
-    setAuthUI();
-  });
-
-  // mudanças de sessão (login/logout)
-  sb.auth.onAuthStateChange((_event, session)=>{
-    sbUser = session?.user || null;
-    setAuthUI();
-  });
-
-  setAuthUI();
-}
-
-async function signInWithEmail(){
-  if (!sb){
-    alert("Supabase ainda não configurado. Cole SUPABASE_URL e SUPABASE_ANON_KEY no app.js.");
-    return;
-  }
-  const email = prompt("Digite seu email para receber o link de login:");
-  if (!email) return;
-
-  const redirectTo = window.location.origin + window.location.pathname; // volta pro /taskfy
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo }
-  });
-
-  if (error){
-    alert("Erro ao enviar link: " + error.message);
-    return;
-  }
-  alert("Link enviado! Abra seu email e clique no link para entrar.");
-}
-
-async function signOut(){
-  if (!sb) return;
-  await sb.auth.signOut();
-}
-  
   const nowTs = () => Date.now();
   const pad = n => String(n).padStart(2,"0");
   const fmt = (ts) => {
@@ -186,42 +115,33 @@ async function signOut(){
   }
 
 async function load(){
-  // 1) se estiver logado → tenta carregar online
+  // se estiver logado → tenta carregar online
   if (sbUser && sb){
-    const { data, error } = await sb
+    const { data } = await sb
       .from("boards")
       .select("data")
       .eq("user_id", sbUser.id)
       .single();
 
-    if (!error && data && data.data){
-      // garante estrutura mínima
-      const parsed = data.data;
-      parsed.cards ||= {};
-      parsed.columns ||= {};
-      parsed.archived ||= [];
-      for (const c of COLS) parsed.columns[c.id] ||= [];
-      return parsed;
+    if (data && data.data){
+      return data.data;
     }
   }
 
-  // 2) fallback local
+  // fallback local
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return seedWithExamples();
-
     const parsed = JSON.parse(raw);
+
     parsed.cards ||= {};
     parsed.columns ||= {};
     parsed.archived ||= [];
-    for (const c of COLS) parsed.columns[c.id] ||= [];
-    return parsed;
-  }catch{
-    return seedWithExamples();
-  }
-}
 
-  let state = await load();
+    fo
+
+
+  let state = seedWithExamples();
 
 
   // ✅ sanitiza para nunca quebrar por id órfão
@@ -257,7 +177,7 @@ async function save(){
   }
 
   // fallback local
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem("kanban-state", JSON.stringify(state));
 }
 
   // Helpers
@@ -390,6 +310,155 @@ async function save(){
   const board = document.getElementById("board");
   const archiveDrop = document.getElementById("archiveDrop");
   const viewArchivedBtn = document.getElementById("viewArchivedBtn");
+
+  // =====================
+// Supabase (Login)
+// =====================
+const SUPABASE_URL = "https://bknethktrrecdfllndyo.supabase.co/";
+const SUPABASE_ANON_KEY = "sb_publishable_9v3vkdV27tpLF059ehpi8A_trs8Lymo";
+let sb = null;
+let sbUser = null;
+
+const authBtn = document.getElementById("authBtn");
+const authStatus = document.getElementById("authStatus");
+
+
+// Tela de login (gate)
+const authGate = document.getElementById("authGate");
+const loginEmail = document.getElementById("loginEmail");
+const loginPass = document.getElementById("loginPass");
+const loginBtn = document.getElementById("loginBtn");
+const signupBtn = document.getElementById("signupBtn");
+
+function lockApp(){
+  document.body.classList.add("auth-locked");
+}
+
+function unlockApp(){
+  document.body.classList.remove("auth-locked");
+}
+
+
+async function signInWithPassword(email, password){
+  if (!sb) return;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
+async function signUpWithPassword(email, password){
+  if (!sb) return;
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) throw error;
+}
+
+loginBtn?.addEventListener("click", async ()=>{
+  const email = (loginEmail?.value || "").trim();
+  const pass  = (loginPass?.value || "").trim();
+  if (!email || !pass) return alert("Preencha email e senha.");
+  try{
+    await signInWithPassword(email, pass);
+    // o onAuthStateChange vai destravar e carregar
+  }catch(e){
+    alert("Não consegui entrar: " + (e?.message || e));
+  }
+});
+
+signupBtn?.addEventListener("click", async ()=>{
+  const email = (loginEmail?.value || "").trim();
+  const pass  = (loginPass?.value || "").trim();
+  if (!email || !pass) return alert("Preencha email e senha.");
+  try{
+    await signUpWithPassword(email, pass);
+    alert("Conta criada! Agora clique em Entrar.");
+  }catch(e){
+    alert("Não consegui criar a conta: " + (e?.message || e));
+  }
+});
+
+// Enter no campo de senha = entrar
+loginPass?.addEventListener("keydown", (e)=>{
+  if (e.key === "Enter") loginBtn?.click();
+});
+
+function setAuthUI(){
+  if (!authBtn) return;
+
+  if (sbUser){
+    authBtn.textContent = "Sair";
+    authBtn.title = "Sair da conta";
+    if (authStatus) authStatus.textContent = sbUser.email || "Logado";
+  } else {
+    authBtn.textContent = "Entrar";
+    authBtn.title = "Entrar para sincronizar";
+    if (authStatus) authStatus.textContent = "";
+  }
+}
+
+function initSupabase(){
+  if (!window.supabase) return;
+  if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // sessão atual
+  sb.auth.getSession().then(async ({ data })=>{
+    sbUser = data?.session?.user || null;
+    setAuthUI();
+
+    if (sbUser){
+      unlockApp();
+      state = await load();
+      sanitizeState();
+      render();
+    } else {
+      lockApp();
+    }
+  });
+
+// mudanças de sessão (login/logout)
+  sb.auth.onAuthStateChange(async (_event, session)=>{
+    sbUser = session?.user || null;
+    setAuthUI();
+
+    if (sbUser){
+      unlockApp();
+      state = await load();
+      sanitizeState();
+      render();
+      saveSoon?.(); // se existir, não quebra
+    } else {
+      lockApp();
+    }
+  });
+
+
+  setAuthUI();
+}
+
+async function signInWithEmail(){
+  if (!sb){
+    alert("Supabase ainda não configurado. Cole SUPABASE_URL e SUPABASE_ANON_KEY no app.js.");
+    return;
+  }
+  const email = prompt("Digite seu email para receber o link de login:");
+  if (!email) return;
+
+  const redirectTo = window.location.origin + window.location.pathname; // volta pro /taskfy
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: redirectTo }
+  });
+
+  if (error){
+    alert("Erro ao enviar link: " + error.message);
+    return;
+  }
+  alert("Link enviado! Abra seu email e clique no link para entrar.");
+}
+
+async function signOut(){
+  if (!sb) return;
+  await sb.auth.signOut();
+}
 
 
   // Card modal refs
@@ -1082,12 +1151,17 @@ document.getElementById("createCardBtn")
 
   // Botão Entrar/Sair
 authBtn?.addEventListener("click", ()=>{
-  if (sbUser) signOut();
-  else signInWithEmail();
+  if (sbUser) {
+    signOut();
+  } else {
+    lockApp();
+    setTimeout(()=> loginEmail?.focus?.(), 0);
+  }
 });
 
 // inicia supabase
-initSupabase();
+lockApp();
+  initSupabase();
 
   
   // Start
