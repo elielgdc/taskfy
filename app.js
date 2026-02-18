@@ -191,7 +191,7 @@ window.onerror = (msg, src, line, col, err) => {
 
   function createCard(title, colId){
     const id = uid();
-    const due = startOfDay(new Date()); // default Hoje
+    const due = null; // default: sem prazo
     state.cards[id] = {
       id,
       title,
@@ -202,7 +202,6 @@ window.onerror = (msg, src, line, col, err) => {
       timeline: [
         { type:"log", ts: nowTs(), text:"Criou o card." },
         { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
-        { type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` },
       ]
     };
     state.columns[colId].unshift(id);
@@ -303,8 +302,8 @@ window.onerror = (msg, src, line, col, err) => {
   const details = document.getElementById("details");
   const cardWhere = document.getElementById("cardWhere");
   const timelineEl = document.getElementById("timeline");
+  const duePill = document.getElementById("duePill");
   const dueLabel = document.getElementById("dueLabel");
-  const dueQuick = document.getElementById("dueQuick");
   const dueDate = document.getElementById("dueDate");
   const newNote = document.getElementById("newNote");
   const addNoteBtn = document.getElementById("addNoteBtn");
@@ -408,8 +407,9 @@ list.addEventListener("drop", (e)=> {
         cardEl.draggable = true;
         cardEl.dataset.id = id;
 
-        const dueTxt = dueHuman(c.dueTs);
-        const chip = `<span class="chip ${dueClass(c.dueTs)}">📅 ${dueTxt}</span>`;
+        const chip = c.dueTs
+  ? `<span class="chip ${dueClass(c.dueTs)}">📅 ${dueHuman(c.dueTs)}</span>`
+  : "";
 
         cardEl.innerHTML = `
           <div class="card-top">
@@ -551,8 +551,8 @@ if (!cardId){
   details.value = "";
   cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
-  dueLabel.textContent = "Hoje";
-  dueDate.value = dateISO(startOfDay(new Date()));
+  dueLabel.textContent = "Prazo";
+  dueDate.value = "";
 
   overlay.dataset.newcol = colId;
   overlay.classList.add("open");
@@ -652,25 +652,6 @@ function closeCard(){
   });
 
   // Due
-  dueQuick.addEventListener("change", ()=>{
-    if (!activeCardId) return;
-    const v = dueQuick.value;
-    const c = state.cards[activeCardId];
-    const before = c.dueTs;
-
-    if (v === "none"){
-      c.dueTs = null;
-      log(activeCardId, "Removeu o prazo do card.");
-    } else {
-      const base = startOfDay(new Date());
-      if (v === "today") c.dueTs = base;
-      if (v === "tomorrow") c.dueTs = base + 1*24*3600*1000;
-      if (v === "in3") c.dueTs = base + 3*24*3600*1000;
-      if (v === "in7") c.dueTs = base + 7*24*3600*1000;
-
-      const after = c.dueTs;
-      if (before !== after) log(activeCardId, `Definiu o prazo do card para ${dueHuman(after)}.`);
-    }
 
     dueLabel.textContent = dueHuman(c.dueTs);
     dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
@@ -679,6 +660,12 @@ function closeCard(){
     renderTimeline();
     dueQuick.value = "";
   });
+
+duePill.addEventListener("click", ()=>{
+  // abre o mini calendário (Edge/Chrome)
+  if (dueDate.showPicker) dueDate.showPicker();
+  else dueDate.click();
+});
 
   dueDate.addEventListener("change", ()=>{
     if (!activeCardId) return;
