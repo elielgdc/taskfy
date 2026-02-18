@@ -1,16 +1,14 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
-
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icone.png">
-<meta name="theme-color" content="#0b1220">
-  
-  
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Taskfy</title>
-  <style>
+<link href="manifest.json" rel="manifest"/>
+<link href="icone.png" rel="icon"/>
+<meta content="#0b1220" name="theme-color"/>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Taskfy</title>
+<style>
     :root{
       --bg:#0b1220;
       --panel:#0f172a;
@@ -810,50 +808,107 @@ body:not(.auth-locked) #loginGate{ display:none; }
 
     
 </style>
-</head>
+</meta></head>
 <body>
+<!-- LOGIN GATE -->
 
-  <!-- LOGIN GATE -->
-<div id="loginGate" class="login-gate">
-  <div class="login-card">
-    <div class="login-title">Taskfy</div>
-    <div class="login-sub">Entre para ver seu quadro.</div>
-
-    <label class="login-label">Email</label>
-    <input id="loginEmail" class="login-input" type="email" placeholder="seu@email.com" autocomplete="email" />
-
-    <label class="login-label">Senha</label>
-    <input id="loginPass" class="login-input" type="password" placeholder="••••••••" autocomplete="current-password" />
-
-    <button id="loginBtn" class="login-btn">Entrar</button>
-
-    <div class="login-hint">
-      Primeiro acesso? você pode criar conta com o mesmo email e senha.
-      <button id="signupBtn" class="login-link" type="button">Criar conta</button>
-    </div>
-  </div>
+<!-- Topbar (aparece após login) -->
+<div class="topbar" style="display:none;">
+<div class="topbar-left">
+<div class="brand">Taskfy</div>
 </div>
-
-  
-
+<div class="topbar-right">
+<span class="muted" id="authStatus"></span>
+<button class="mini" id="authBtn" type="button">Entrar</button>
+<button class="mini" id="viewArchivedBtn" type="button">Arquivados <span class="badge" id="archBadge"><span id="archCount">0</span></span></button>
+</div>
+</div>
+<!-- Board -->
+<div id="board" style="display:none;"></div>
+<!-- Área de drop para arquivar (drag and drop) -->
+<div id="archiveDrop" style="display:none;"></div>
+<!-- Modal overlay / detalhes do card -->
+<div class="overlay" id="overlay" style="display:none;">
+<div class="modal">
+<div class="modal-head">
+<input id="modalTitle" placeholder="Insira o título do card" type="text"/>
+<button class="mini" id="closeModal" type="button">Fechar</button>
+</div>
+<div class="modal-body">
+<div class="muted" id="cardWhere"></div>
+<div class="row">
+<button class="mini" id="duePill" type="button">Prazo</button>
+<span class="muted" id="dueLabel">Prazo:</span>
+</div>
+<div class="due-pop" id="duePop">
+<div class="due-pop-head">
+<button class="mini" id="duePrev" type="button">◀</button>
+<div class="muted" id="dueMonth"></div>
+<button class="mini" id="dueNext" type="button">▶</button>
+</div>
+<div class="due-pop-actions">
+<button class="mini" id="dueToday" type="button">Hoje</button>
+<button class="mini" id="dueClear" type="button">Limpar</button>
+</div>
+<input id="dueDate" type="date"/>
+<div id="dueGrid"></div>
+</div>
+<div id="details"></div>
+<div class="checklist">
+<div class="row">
+<input id="newTask" placeholder="Nova tarefa" type="text"/>
+<button class="mini" id="addTaskBtn" type="button">Adicionar</button>
+</div>
+<div id="taskList"></div>
+</div>
+<div class="notes">
+<div class="row">
+<textarea id="newNote" placeholder="Nova nota"></textarea>
+<button class="mini" id="addNoteBtn" type="button">Salvar nota</button>
+</div>
+</div>
+<div class="row actions">
+<button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
+<button class="mini" id="createCardBtn" type="button">Criar card</button>
+<button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
+<button class="mini" id="deleteCardBtn" type="button">Excluir</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Timeline -->
+<div id="timeline" style="display:none;"></div>
+<!-- Arquivados -->
+<div class="overlay" id="archOverlay" style="display:none;">
+<div class="modal">
+<div class="modal-head">
+<div class="muted" style="font-weight:700;">Arquivados</div>
+<button class="mini" id="closeArch" type="button">Fechar</button>
+</div>
+<div class="modal-body">
+<div class="row">
+<button class="mini" id="clearArchivedBtn" type="button">Limpar arquivados</button>
+</div>
+<div id="archList"></div>
+</div>
+</div>
+</div>
+<div class="login-gate" id="loginGate">
+<div class="login-card">
+<div class="login-title">Taskfy</div>
+<div class="login-sub">Entre para ver seu quadro.</div>
+<label class="login-label">Email</label>
+<input autocomplete="email" class="login-input" id="loginEmail" placeholder="seu@email.com" type="email"/>
+<label class="login-label">Senha</label>
+<input autocomplete="current-password" class="login-input" id="loginPass" placeholder="••••••••" type="password"/>
+<button class="login-btn" id="loginBtn">Entrar</button>
+<div class="login-hint">
+      Primeiro acesso? você pode criar conta com o mesmo email e senha.
+      <button class="login-link" id="signupBtn" type="button">Criar conta</button>
+</div>
+</div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app.js"></script>
-  
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
