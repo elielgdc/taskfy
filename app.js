@@ -114,7 +114,7 @@ window.onerror = (msg, src, line, col, err) => {
     return s;
   }
 
-async // ===================== Persistência (local + online) =====================
+// ===================== Persistência (local + online) =====================
 
 function loadLocal(){
   try{
@@ -216,7 +216,6 @@ let state = loadLocal();
     archCount.textContent = n;
   }
 
-async 
 
 // (save antigo removido)
 
