@@ -515,7 +515,7 @@ window.onerror = (msg, src, line, col, err) => {
 
 // NOVO CARD (ainda não existe)
 if (!cardId){
-  modalTitle.textContent = "Novo card";
+  modalTitle.value = "";
   details.value = "";
   cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
@@ -529,7 +529,7 @@ if (!cardId){
 
 // CARD EXISTENTE
 const c = state.cards[cardId];
-modalTitle.textContent = c.title;
+modalTitle.value = c.title || "";
 details.value = c.details || "";
 cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
@@ -547,9 +547,9 @@ function closeCard(){
 
   // se estava criando um novo card
   if (!activeCardId && overlay.dataset.newcol){
-    const title = modalTitle.textContent.trim();
+    const title = modalTitle.value.trim();
 
-    if (title && title !== "Novo card"){
+    if (title) {
       const colId = overlay.dataset.newcol;
       createCard(title, colId);
     }
