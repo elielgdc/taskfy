@@ -319,6 +319,18 @@ const SUPABASE_ANON_KEY = "sb_publishable_9v3vkdV27tpLF059ehpi8A_trs8Lymo";
 let sb = null;
 let sbUser = null;
 
+function setGateUI(){
+  const gate = document.getElementById("loginGate");
+  const board = document.getElementById("board");
+  const topbar = document.querySelector(".topbar");
+
+  const logged = !!sbUser;
+
+  if (gate) gate.classList.toggle("open", !logged);
+  if (board) board.style.display = logged ? "" : "none";
+  if (topbar) topbar.style.display = logged ? "" : "none";
+}
+    
 const authBtn = document.getElementById("authBtn");
 const authStatus = document.getElementById("authStatus");
 
@@ -397,7 +409,40 @@ function setAuthUI(){
 function initSupabase(){
   if (!window.supabase) return;
   if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
+  
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ---- Login Gate (email/senha)
+  const loginEmail = document.getElementById("loginEmail");
+  const loginPass  = document.getElementById("loginPass");
+  const loginBtn   = document.getElementById("loginBtn");
+  const signupBtn  = document.getElementById("signupBtn");
+
+  async function doLogin(){
+    const email = (loginEmail?.value || "").trim();
+    const password = (loginPass?.value || "").trim();
+    if (!email || !password) { alert("Preencha email e senha."); return; }
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) alert("Erro ao entrar: " + error.message);
+  }
+
+  async function doSignup(){
+    const email = (loginEmail?.value || "").trim();
+    const password = (loginPass?.value || "").trim();
+    if (!email || !password) { alert("Preencha email e senha."); return; }
+
+    const { error } = await sb.auth.signUp({ email, password });
+    if (error) alert("Erro ao criar conta: " + error.message);
+    else alert("Conta criada! Agora clique em Entrar.");
+  }
+
+  loginBtn?.addEventListener("click", doLogin);
+  signupBtn?.addEventListener("click", doSignup);
+
+  loginPass?.addEventListener("keydown", (e)=>{
+    if (e.key === "Enter") doLogin();
+  });
 
   // sessão atual
   sb.auth.getSession().then(async ({ data })=>{
@@ -405,12 +450,12 @@ function initSupabase(){
     setAuthUI();
 
     if (sbUser){
-      unlockApp();
+      setGateUI();
       state = await load();
       sanitizeState();
       render();
     } else {
-      lockApp();
+      setGateUI();
     }
   });
 
@@ -420,13 +465,13 @@ function initSupabase(){
     setAuthUI();
 
     if (sbUser){
-      unlockApp();
+      setGateUI();
       state = await load();
       sanitizeState();
       render();
       saveSoon?.(); // se existir, não quebra
     } else {
-      lockApp();
+      setGateUI();
     }
   });
 
@@ -1154,13 +1199,13 @@ authBtn?.addEventListener("click", ()=>{
   if (sbUser) {
     signOut();
   } else {
-    lockApp();
+    setGateUI();
     setTimeout(()=> loginEmail?.focus?.(), 0);
   }
 });
 
 // inicia supabase
-lockApp();
+setGateUI();
   initSupabase();
 
   
