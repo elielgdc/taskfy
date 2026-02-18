@@ -716,9 +716,80 @@
 }
 
     
-  </style>
+  
+/* ===== Auth Gate (tela de login) ===== */
+body.auth-locked .topbar,
+body.auth-locked .wrap{ display:none; }
+
+#authGate{
+  position:fixed; inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background: radial-gradient(1200px 600px at 20% 10%, rgba(59,130,246,.18), transparent 60%),
+              radial-gradient(900px 500px at 80% 30%, rgba(34,197,94,.16), transparent 55%),
+              rgba(6,10,20,.88);
+  backdrop-filter: blur(10px);
+  z-index:9999;
+}
+body.auth-locked #authGate{ display:flex; }
+
+.auth-card{
+  width:min(520px, 100%);
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:18px;
+  background: rgba(15,23,42,.55);
+  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  padding:18px;
+}
+.auth-title{ font-weight:900; font-size:18px; margin:0 0 6px; }
+.auth-sub{ color:rgba(226,232,240,.75); font-size:13px; margin:0 0 14px; line-height:1.4; }
+.auth-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.auth-input{
+  width:100%;
+  padding:12px 12px;
+  border-radius:12px;
+  border:1px solid rgba(148,163,184,.18);
+  background: rgba(255,255,255,.04);
+  color:#e2e8f0;
+  outline:none;
+}
+.auth-input:focus{ border-color: rgba(59,130,246,.55); }
+.auth-actions{ display:flex; gap:10px; margin-top:12px; }
+.auth-actions .btn{ flex:1; }
+.auth-hint{ margin-top:10px; font-size:12px; color:rgba(226,232,240,.7); }
+.auth-hint b{ color:#e2e8f0; }
+
+</style>
 </head>
 <body>
+
+  <!-- Tela de login (mostra antes do quadro) -->
+  <div id="authGate">
+    <div class="auth-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div class="auth-title">Entrar no Taskfy</div>
+          <div class="auth-sub">Seu quadro é <b>privado</b>. Faça login para carregar e sincronizar suas tasks online.</div>
+        </div>
+      </div>
+
+      <input id="loginEmail" class="auth-input" type="email" placeholder="Seu email" autocomplete="email" />
+      <input id="loginPass" class="auth-input" type="password" placeholder="Sua senha" autocomplete="current-password" style="margin-top:10px" />
+
+      <div class="auth-actions">
+        <button class="btn primary" id="loginBtn">Entrar</button>
+        <button class="btn" id="signupBtn">Criar conta</button>
+      </div>
+
+      <div class="auth-hint">
+        Dica: se você já usa o app em outro PC/celular, entre com o <b>mesmo email</b> para ver tudo igual.
+      </div>
+    </div>
+  </div>
+
+
 
   <div class="topbar">
     <div class="dot"></div>
