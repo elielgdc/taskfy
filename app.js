@@ -361,6 +361,7 @@ let sb = null;
 let sbUser = null;
 
 function setGateUI(){
+  alert("loginGate existe? " + !!document.getElementById("loginGate"));
   const gate = document.getElementById("loginGate");
   const board = document.getElementById("board");
   const topbar = document.querySelector(".topbar");
