@@ -612,6 +612,108 @@
   opacity:0;
   pointer-events:none;
 }    
+
+.due-wrap{ position:relative; }
+
+.due-pop{
+  position:absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 310px;
+  background: rgba(15,23,42,98);
+  border: 1px solid rgba(148,163,184,18);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  display:none;
+  z-index: 999;
+}
+
+.due-pop.open{ display:block; }
+
+.due-pop-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.due-nav{
+  width:34px;height:34px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,18);
+  background: rgba(148,163,184,06);
+  color:#e5e7eb;
+  cursor:pointer;
+  font-size:18px;
+  font-weight:1000;
+}
+
+.due-month{
+  flex:1;
+  text-align:center;
+  font-weight:1000;
+  color:#e5e7eb;
+}
+
+.due-quick{
+  display:flex;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.due-q{
+  flex:1;
+  border:1px solid rgba(148,163,184,18);
+  background: rgba(148,163,184,06);
+  color:#e5e7eb;
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+  font-weight:1000;
+}
+
+.due-q:hover{ background: rgba(148,163,184,10); }
+
+.due-dow{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:6px;
+  color: var(--muted);
+  font-weight:1000;
+  font-size:12px;
+  margin-bottom:8px;
+  text-align:center;
+}
+
+.due-grid{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:6px;
+}
+
+.due-day{
+  height:34px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,18);
+  background: rgba(148,163,184,06);
+  color:#e5e7eb;
+  cursor:pointer;
+  font-weight:1000;
+}
+
+.due-day:hover{ background: rgba(148,163,184,10); }
+
+.due-day.muted{
+  opacity:.35;
+}
+
+.due-day.sel{
+  outline: 2px solid rgba(59,130,246,.65);
+  background: rgba(59,130,246,.18);
+}
+
     
   </style>
 </head>
@@ -669,6 +771,24 @@
           </div>
         
           <input id="dueDate" type="date" class="due-hidden" />
+        <div class="due-pop" id="duePop" aria-hidden="true">
+  <div class="due-pop-top">
+    <button class="due-nav" id="duePrev" title="Mês anterior">‹</button>
+    <div class="due-month" id="dueMonth">Fev 2026</div>
+    <button class="due-nav" id="dueNext" title="Próximo mês">›</button>
+  </div>
+
+  <div class="due-quick">
+    <button class="due-q" id="dueToday">Hoje</button>
+    <button class="due-q" id="dueClear">Sem data</button>
+  </div>
+
+  <div class="due-dow">
+    <span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+  </div>
+
+  <div class="due-grid" id="dueGrid"></div>
+</div>
         </div>
 
         <button class="modal-close" id="closeModal" title="Fechar">×</button>
@@ -759,6 +879,7 @@
   
 </body>
 </html>
+
 
 
 
