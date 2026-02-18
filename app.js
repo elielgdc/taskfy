@@ -595,7 +595,7 @@ async function signOut(){
   function closeAllMenus(){
     document.querySelectorAll(".menu.open").forEach(m => m.classList.remove("open"));
   }
-  documentelemento?.addEventListener"click", closeAllMenus);
+  document.addEventListener("click", closeAllMenus);
 
   function openMovePrompt(cardId){
     const options = COLS.map((c,i)=> `${i+1}) ${c.title}`).join("\n");
