@@ -294,6 +294,12 @@ window.onerror = (msg, src, line, col, err) => {
   // Card modal refs
   const overlay = document.getElementById("overlay");
   const modalTitle = document.getElementById("modalTitle");
+  modalTitle.addEventListener("keydown", (e)=>{
+  if (e.key === "Enter"){
+    e.preventDefault();
+    tryCreateCard();
+  }
+});
   const details = document.getElementById("details");
   const cardWhere = document.getElementById("cardWhere");
   const timelineEl = document.getElementById("timeline");
@@ -841,6 +847,9 @@ function closeCard(){
     }
   }
 
+  document.getElementById("createCardBtn")
+  ?.addEventListener("click", tryCreateCard);
+  
   // Start
   save();
   render();
