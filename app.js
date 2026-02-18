@@ -366,10 +366,11 @@ window.onerror = (msg, src, line, col, err) => {
       const plus = colEl.querySelector(".add-plus");
       const input = colEl.querySelector(".add-input");
       plus.addEventListener("click", () => {
-        const t = input.value.trim();
-        if (!t) return;
-        createCard(t, col.id);
-        input.value = "";
+        const id = createCard("Novo card", col.id);
+        // abre o modal do card recém criado
+        openCard(id, col.id);
+        // opcional: já foca no campo de detalhes
+        setTimeout(() => details?.focus?.(), 0);
       });
       input.addEventListener("keydown", (e)=>{
         if (e.key === "Enter"){
