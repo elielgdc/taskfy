@@ -1234,11 +1234,11 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
     }
   }
 
-document.getElementById("createCardBtn")??.addEventListener("click", closeCard);
+document.getElementById("createCardBtn")?.addEventListener("click", closeCard);
 
 
   // Botão Entrar/Sair
-authBtn??.addEventListener("click", ()=>{
+authBtn?.addEventListener("click", ()=>{
   if (sbUser) {
     signOut();
   } else {
