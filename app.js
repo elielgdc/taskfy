@@ -398,24 +398,6 @@ async function signInWithPassword(email, password){
   if (error) throw error;
 }
 
-async function signUpWithPassword(email, password){
-  if (!sb) return;
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) throw error;
-}
-
-loginBtn?.addEventListener("click", async () => {
-  const email = (loginEmail?.value || "").trim();
-  const pass  = (loginPass?.value || "").trim();
-  if (!email || !pass) return alert("Preencha email e senha.");
-  try{
-    await signInWithPassword(email, pass);
-    // o onAuthStateChange vai destravar e carregar
-  }catch(e){
-    alert("Não consegui entrar: " + (e?.message || e));
-  }
-});
-
 let signingUp = false;
 
 signupBtn?.addEventListener("click", async () => {
