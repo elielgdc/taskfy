@@ -1,4 +1,3 @@
-<script>
 /* Alert simples pra qualquer erro (pra não ficar “tela em branco”) */
 window.onerror = (msg, src, line, col, err) => {
   alert("Erro no Kanban:\n" + msg + "\nLinha: " + line + ":" + col);
@@ -816,4 +815,3 @@ window.onerror = (msg, src, line, col, err) => {
   save();
   render();
 })();
-</script>
