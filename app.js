@@ -361,7 +361,6 @@ let sb = null;
 let sbUser = null;
 
 function setGateUI(){
-  alert("loginGate existe? " + !!document.getElementById("loginGate"));
   const gate = document.getElementById("loginGate");
   const board = document.getElementById("board");
   const topbar = document.querySelector(".topbar");
@@ -1036,8 +1035,8 @@ dueClearBtn?.addEventListener("click", (e)=>{
 });
 
 // clicar fora fecha
-document.addEventListener("click", ()=>{
-  if (duePop.classList.contains("open")) closeDuePop();
+document.addEventListener("click", () => {
+  if (duePop?.classList.contains("open")) closeDuePop();
 });
 duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
