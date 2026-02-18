@@ -636,7 +636,7 @@ async function signOut(){
       // Add card
       const plus = colEl.querySelector(".add-plus");
       const input = colEl.querySelector(".add-input");
-      plus?.addEventListener"click", () => {
+      plus?.addEventListener("click", () => {
         // abre a janela, mas NÃO cria card ainda
         openCard(null, col.id);
         // opcional: já foca no campo de detalhes
@@ -645,7 +645,7 @@ async function signOut(){
   modalTitle?.select?.();
 }, 0);
       });
-      input?.addEventListener"keydown", (e)=>{
+      input?.addEventListener("keydown", (e) => {
         if (e.key === "Enter"){
           const t = input.value.trim();
           if (!t) return;
@@ -656,8 +656,8 @@ async function signOut(){
 
       // Drop area
 const list = colEl.querySelector(".cards");
-list?.addEventListener"dragover", (e)=> e.preventDefault());
-list?.addEventListener"drop", (e)=> {
+list?.addEventListener("dragover", (e) => e.preventDefault());
+list?.addEventListener("drop", (e) => {
   e.stopPropagation();
   onDropToColumn(e, col.id);
 });;
@@ -703,13 +703,13 @@ list?.addEventListener"drop", (e)=> {
         const kebab = cardEl.querySelector("[data-kebab]");
         const menu  = cardEl.querySelector("[data-menu]");
 
-        kebab?.addEventListener"click", (ev)=>{
+        kebab?.addEventListener("click", (ev)=>{
           ev.stopPropagation();
           closeAllMenus();
           menu.classList.toggle("open");
         });
 
-        menu?.addEventListener"click", (ev)=>{
+        menu?.addEventListener("click", (ev)=>{
           ev.stopPropagation();
           const act = ev.target?.dataset?.act;
           if (!act) return;
@@ -725,17 +725,17 @@ list?.addEventListener"drop", (e)=> {
           }
         });
 
-        cardEl?.addEventListener"click", ()=>{
+        cardEl?.addEventListener("click", ()=>{
           closeAllMenus();
           openCard(id, col.id);
         });
 
-        cardEl?.addEventListener"dragstart", (e)=>{
+        cardEl?.addEventListener("dragstart", (e)=>{
           closeAllMenus();
           cardEl.classList.add("dragging");
           e.dataTransfer.setData("text/plain", JSON.stringify({ cardId:id, from: col.id }));
         });
-        cardEl?.addEventListener"dragend", ()=> cardEl.classList.remove("dragging"));
+        cardEl?.addEventListener("dragend", ()=> cardEl.classList.remove("dragging"));
 
         list.appendChild(cardEl);
       }
@@ -789,10 +789,10 @@ function onDropToColumn(e, toCol){
 
   // Archive as dropzone
   if (archiveDrop){
-    archiveDrop?.addEventListener"dragover", (e)=> e.preventDefault());
-    archiveDrop?.addEventListener"dragenter", ()=> archiveDrop.classList.add("drop-active"));
-    archiveDrop?.addEventListener"dragleave", ()=> archiveDrop.classList.remove("drop-active"));
-    archiveDrop?.addEventListener"drop", (e)=>{
+    archiveDrop?.addEventListener("dragover", (e)=> e.preventDefault());
+    archiveDrop?.addEventListener("dragenter", ()=> archiveDrop.classList.add("drop-active"));
+    archiveDrop?.addEventListener("dragleave", ()=> archiveDrop.classList.remove("drop-active"));
+    archiveDrop?.addEventListener("drop", (e)=>{
       e.preventDefault();
       archiveDrop.classList.remove("drop-active");
       try{
@@ -861,11 +861,11 @@ function closeCard(){
   newTask.value = "";
 }
 
-  closeModal?.addEventListener"click", closeCard);
-  overlay?.addEventListener"click", (e)=>{ if (e.target === overlay) closeCard(); });
-  document.addEventListener"keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
+  closeModal?.addEventListener("click", closeCard);
+  overlay?.addEventListener("click", (e)=>{ if (e.target === overlay) closeCard(); });
+  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
 
-  saveDetailsBtn?.addEventListener"click", ()=>{
+  saveDetailsBtn?.addEventListener("click", ()=>{
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
     const prev = c.details || "";
@@ -876,14 +876,14 @@ function closeCard(){
     render();
   });
 
-  archiveFromModalBtn?.addEventListener"click", ()=>{
+  archiveFromModalBtn?.addEventListener("click", ()=>{
     if (!activeCardId) return;
     const id = activeCardId;
     closeCard();
     archiveCard(id);
   });
 
-  deleteCardBtn?.addEventListener"click", ()=>{
+  deleteCardBtn?.addEventListener("click", ()=>{
     if (!activeCardId) return;
     if (!confirm("Excluir este card?")) return;
     const id = activeCardId;
@@ -893,7 +893,7 @@ function closeCard(){
 
   // Tabs
   document.querySelectorAll(".tab").forEach(tab=>{
-    tab?.addEventListener"click", ()=>{
+    tab?.addEventListener("click", ()=>{
       document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
       tab.classList.add("active");
       activeTab = tab.dataset.tab;
@@ -902,7 +902,7 @@ function closeCard(){
   });
 
   // Notes
-  addNoteBtn?.addEventListener"click", ()=>{
+  addNoteBtn?.addEventListener("click", ()=>{
     if (!activeCardId) return;
     const t = newNote.value.trim();
     if (!t) return;
@@ -910,7 +910,7 @@ function closeCard(){
     newNote.value = "";
     renderTimeline();
   });
-  newNote?.addEventListener"keydown", (e)=>{
+  newNote?.addEventListener("keydown", (e)=>{
     if (e.key === "Enter"){
       e.preventDefault();
       addNoteBtn.click();
@@ -964,7 +964,7 @@ function renderDuePop(){
     btn.className = "due-day muted";
     btn.type = "button";
     btn.textContent = "·";
-    btn?.addEventListener"click", ()=>{});
+    btn?.addEventListener("click", ()=>{});
     dueGrid.appendChild(btn);
   }
 
@@ -978,7 +978,7 @@ function renderDuePop(){
     btn.type = "button";
     btn.textContent = String(d);
 
-    btn?.addEventListener"click", ()=>{
+    btn?.addEventListener("click", ()=>{
       dueDate.value = iso;
       dueDate.dispatchEvent(new Event("change", { bubbles:true }));
       closeDuePop();
@@ -989,7 +989,7 @@ function renderDuePop(){
 }
 
 // abrir no clique do “Prazo”
-duePill?.addEventListener"click", (e)=>{
+duePill?.addEventListener("click", (e)=>{
   e.stopPropagation();
 
   // define o mês mostrado: se já existe data, abre naquele mês; senão, mês atual
@@ -1006,19 +1006,19 @@ duePill?.addEventListener"click", (e)=>{
 });
 
 // navegar meses
-duePrev?.addEventListener"click", (e)=>{
+duePrev?.addEventListener("click", (e)=>{
   e.stopPropagation();
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()-1, 1);
   renderDuePop();
 });
-dueNext?.addEventListener"click", (e)=>{
+dueNext?.addEventListener("click", (e)=>{
   e.stopPropagation();
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()+1, 1);
   renderDuePop();
 });
 
 // Hoje
-dueTodayBtn?.addEventListener"click", (e)=>{
+dueTodayBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
   const now = new Date();
   const iso = isoFromDate(now);
@@ -1028,7 +1028,7 @@ dueTodayBtn?.addEventListener"click", (e)=>{
 });
 
 // Sem data
-dueClearBtn?.addEventListener"click", (e)=>{
+dueClearBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
   dueDate.value = "";
   dueDate.dispatchEvent(new Event("change", { bubbles:true }));
@@ -1036,12 +1036,12 @@ dueClearBtn?.addEventListener"click", (e)=>{
 });
 
 // clicar fora fecha
-document.addEventListener"click", ()=>{
+document.addEventListener("click", ()=>{
   if (duePop.classList.contains("open")) closeDuePop();
 });
-duePop?.addEventListener"click", (e)=> e.stopPropagation());
+duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
-  dueDate?.addEventListener"change", ()=>{
+  dueDate?.addEventListener("change", ()=>{
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
     const v = dueDate.value;
@@ -1064,7 +1064,7 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
   });
 
   // Checklist
-  addTaskBtn?.addEventListener"click", ()=>{
+  addTaskBtn?.addEventListener("click", ()=>{
     if (!activeCardId) return;
     const t = newTask.value.trim();
     if (!t) return;
@@ -1104,7 +1104,7 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
       `;
 
       const cb = row.querySelector("input");
-      cb?.addEventListener"change", ()=>{
+      cb?.addEventListener("change", ()=>{
         t.done = cb.checked;
         log(activeCardId, t.done ? "Concluiu uma tarefa do checklist." : "Reabriu uma tarefa do checklist.");
         save();
@@ -1113,7 +1113,7 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
       });
 
       const del = row.querySelector("button");
-      del?.addEventListener"click", ()=>{
+      del?.addEventListener("click", ()=>{
         if (!confirm("Excluir esta tarefa?")) return;
         c.tasks = c.tasks.filter(x=>x.id!==t.id);
         log(activeCardId, "Excluiu uma tarefa do checklist.");
@@ -1169,12 +1169,12 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
     archOverlay.classList.remove("open");
   }
 
-  viewArchivedBtn?.addEventListener"click", openArchivedModal);
-  closeArch?.addEventListener"click", closeArchivedModal);
-  archOverlay?.addEventListener"click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
-  document.addEventListener"keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
+  viewArchivedBtn?.addEventListener("click", openArchivedModal);
+  closeArch?.addEventListener("click", closeArchivedModal);
+  archOverlay?.addEventListener("click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
+  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
 
-  clearArchivedBtn?.addEventListener"click", ()=>{
+  clearArchivedBtn?.addEventListener("click", ()=>{
     if (!state.archived.length) return;
     if (!confirm("Limpar todos os arquivados? (eles serão EXCLUÍDOS)")) return;
     for (const id of [...state.archived]){
@@ -1211,12 +1211,12 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
         </div>
       `;
 
-      item.querySelector('[data-act="restore"]')?.addEventListener"click", ()=>{
+      item.querySelector('[data-act="restore"]')?.addEventListener("click", ()=>{
         restoreCard(id, "todo");
         renderArchivedList();
       });
 
-      item.querySelector('[data-act="open"]')?.addEventListener"click", ()=>{
+      item.querySelector('[data-act="open"]')?.addEventListener("click", ()=>{
         // abre o card restaurando em todo
         restoreCard(id, "todo");
         renderArchivedList();
@@ -1224,7 +1224,7 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
         openCard(id, "todo");
       });
 
-      item.querySelector('[data-act="del"]')?.addEventListener"click", ()=>{
+      item.querySelector('[data-act="del"]')?.addEventListener("click", ()=>{
         if (!confirm("Excluir esse card arquivado?")) return;
         deleteCard(id);
         renderArchivedList();
@@ -1234,11 +1234,11 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
     }
   }
 
-document.getElementById("createCardBtn")??.addEventListener"click", closeCard);
+document.getElementById("createCardBtn")??.addEventListener("click", closeCard);
 
 
   // Botão Entrar/Sair
-authBtn??.addEventListener"click", ()=>{
+authBtn??.addEventListener("click", ()=>{
   if (sbUser) {
     signOut();
   } else {
