@@ -4,7 +4,7 @@ window.onerror = (msg, src, line, col, err) => {
   console.error(err || msg);
 };
 
-(() => {
+(async () => {
   const STORAGE_KEY = "ummense_like_kanban_dark_v1";
 
   const COLS = [
@@ -115,31 +115,40 @@ window.onerror = (msg, src, line, col, err) => {
   }
 
 async function load(){
-  // se estiver logado → tenta carregar online
+  // 1) se estiver logado → tenta carregar online
   if (sbUser && sb){
-    const { data } = await sb
+    const { data, error } = await sb
       .from("boards")
       .select("data")
       .eq("user_id", sbUser.id)
       .single();
 
-    if (data && data.data){
-      return data.data;
+    if (!error && data && data.data){
+      // garante estrutura mínima
+      const parsed = data.data;
+      parsed.cards ||= {};
+      parsed.columns ||= {};
+      parsed.archived ||= [];
+      for (const c of COLS) parsed.columns[c.id] ||= [];
+      return parsed;
     }
   }
 
-  // fallback local
+  // 2) fallback local
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return seedWithExamples();
-    const parsed = JSON.parse(raw);
 
+    const parsed = JSON.parse(raw);
     parsed.cards ||= {};
     parsed.columns ||= {};
     parsed.archived ||= [];
-
-    fo
-
+    for (const c of COLS) parsed.columns[c.id] ||= [];
+    return parsed;
+  }catch{
+    return seedWithExamples();
+  }
+}
 
   let state = seedWithExamples();
 
