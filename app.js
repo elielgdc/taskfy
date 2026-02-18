@@ -863,7 +863,7 @@ function closeCard(){
 
   closeModal?.addEventListener"click", closeCard);
   overlay?.addEventListener"click", (e)=>{ if (e.target === overlay) closeCard(); });
-  document?.addEventListener"keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
+  document.addEventListener"keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
 
   saveDetailsBtn?.addEventListener"click", ()=>{
     if (!activeCardId) return;
@@ -1036,7 +1036,7 @@ dueClearBtn?.addEventListener"click", (e)=>{
 });
 
 // clicar fora fecha
-document?.addEventListener"click", ()=>{
+document.addEventListener"click", ()=>{
   if (duePop.classList.contains("open")) closeDuePop();
 });
 duePop?.addEventListener"click", (e)=> e.stopPropagation());
@@ -1172,7 +1172,7 @@ duePop?.addEventListener"click", (e)=> e.stopPropagation());
   viewArchivedBtn?.addEventListener"click", openArchivedModal);
   closeArch?.addEventListener"click", closeArchivedModal);
   archOverlay?.addEventListener"click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
-  document?.addEventListener"keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
+  document.addEventListener"keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
 
   clearArchivedBtn?.addEventListener"click", ()=>{
     if (!state.archived.length) return;
