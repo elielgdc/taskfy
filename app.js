@@ -114,21 +114,9 @@ window.onerror = (msg, src, line, col, err) => {
     return s;
   }
 
-async function load(){
-  // se estiver logado → tenta carregar online
-  if (sbUser && sb){
-    const { data } = await sb
-      .from("boards")
-      .select("data")
-      .eq("user_id", sbUser.id)
-      .single();
+async // ===================== Persistência (local + online) =====================
 
-    if (data && data.data){
-      return data.data;
-    }
-  }
-
-  // fallback local
+function loadLocal(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return seedWithExamples();
@@ -138,10 +126,75 @@ async function load(){
     parsed.columns ||= {};
     parsed.archived ||= [];
 
-    fo
+    // garantir colunas
+    for (const c of COLS) parsed.columns[c.id] ||= [];
 
+    return parsed;
+  }catch(e){
+    return seedWithExamples();
+  }
+}
 
-  let state = seedWithExamples();
+async function loadOnline(){
+  if (!(sbUser && sb)) return null;
+  try{
+    const { data, error } = await sb
+      .from("boards")
+      .select("data")
+      .eq("user_id", sbUser.id)
+      .maybeSingle();
+
+    if (error) return null;
+    if (data && data.data) return data.data;
+    return null;
+  }catch(e){
+    return null;
+  }
+}
+
+async function load(){
+  // se estiver logado → tenta carregar online, senão cai pro local
+  const online = await loadOnline();
+  if (online) return online;
+  return loadLocal();
+}
+
+function saveLocal(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){}
+}
+
+async function saveOnline(){
+  if (!(sbUser && sb)) return;
+  try{
+    await sb
+      .from("boards")
+      .upsert({
+        user_id: sbUser.id,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
+  }catch(e){}
+}
+
+// salva sem travar o app (debounce)
+let _saveT = null;
+function saveSoon(){
+  clearTimeout(_saveT);
+  _saveT = setTimeout(() => { save(); }, 350);
+}
+
+function save(){
+  // se estiver logado → salva online; senão salva local
+  if (sbUser && sb){
+    saveOnline();
+  }else{
+    saveLocal();
+  }
+}
+
+let state = loadLocal();
 
 
   // ✅ sanitiza para nunca quebrar por id órfão
@@ -163,22 +216,11 @@ async function load(){
     archCount.textContent = n;
   }
 
-async function save(){
-  // se estiver logado → salva online
-  if (sbUser && sb){
-    await sb
-      .from("boards")
-      .upsert({
-        user_id: sbUser.id,
-        data: state,
-        updated_at: new Date().toISOString()
-      });
-    return;
-  }
+async 
 
-  // fallback local
-  localStorage.setItem("kanban-state", JSON.stringify(state));
-}
+// (save antigo removido)
+
+
 
   // Helpers
   function findCardColumn(cardId){
@@ -1204,12 +1246,10 @@ authBtn?.addEventListener("click", ()=>{
   }
 });
 
-// inicia supabase
-setGateUI();
+// Start
+  lockApp();
+  setGateUI();
   initSupabase();
+  // (render acontece após login, dentro do initSupabase)
 
-  
-  // Start
-  save();
-  render();
 })();
