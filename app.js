@@ -416,15 +416,35 @@ loginBtn?.addEventListener("click", async () => {
   }
 });
 
+let signingUp = false;
+
 signupBtn?.addEventListener("click", async () => {
+  if (signingUp) return;
+  signingUp = true;
+  signupBtn.disabled = true;
+
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
-  if (!email || !pass) return alert("Preencha email e senha.");
-  try{
+  if (!email || !pass) {
+    alert("Preencha email e senha.");
+    signupBtn.disabled = false;
+    signingUp = false;
+    return;
+  }
+
+  try {
     await signUpWithPassword(email, pass);
     alert("Conta criada! Agora clique em Entrar.");
-  }catch(e){
-    alert("Não consegui criar a conta: " + (e?.message || e));
+  } catch (e) {
+    const msg = (e?.message || String(e));
+    if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already")) {
+      alert("Esse email já tem conta. Clique em Entrar.");
+    } else {
+      alert("Não consegui criar a conta: " + msg);
+    }
+  } finally {
+    signupBtn.disabled = false;
+    signingUp = false;
   }
 });
 
