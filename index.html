@@ -1,0 +1,1508 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kanban Ummense-like (Dark)</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f172a;
+      --panel2:#0b1326;
+      --line:#1f2a44;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+
+      --blue:#2f6fed;
+      --blue2:#1f5ae0;
+
+      --shadow:0 14px 35px rgba(0,0,0,.35);
+      --radius:14px;
+
+      --chip-today-bg: rgba(34,197,94,.14);
+      --chip-today-bd: rgba(34,197,94,.35);
+      --chip-today-tx: #86efac;
+
+      --chip-future-bg: rgba(245,158,11,.14);
+      --chip-future-bd: rgba(245,158,11,.35);
+      --chip-future-tx: #fde68a;
+
+      --chip-overdue-bg: rgba(239,68,68,.14);
+      --chip-overdue-bd: rgba(239,68,68,.35);
+      --chip-overdue-tx: #fca5a5;
+
+      --chip-none-bg: rgba(148,163,184,.12);
+      --chip-none-bd: rgba(148,163,184,.25);
+      --chip-none-tx: #cbd5e1;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    /* Topbar */
+    .topbar{
+      height:58px;
+      background:rgba(15,23,42,.92);
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      padding:0 14px;
+      gap:10px;
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(10px);
+    }
+    .dot{width:10px;height:10px;border-radius:999px;background:#7ac943}
+    .user{font-weight:900}
+    .spacer{flex:1}
+    .search{
+      display:flex;align-items:center;gap:8px;
+      background:rgba(148,163,184,.10);
+      border:1px solid rgba(148,163,184,.18);
+      padding:8px 12px;border-radius:999px;min-width:280px;
+      color:var(--muted);font-size:13px;
+    }
+    .btn{
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(15,23,42,.92);
+      border-radius:12px;
+      padding:9px 12px;
+      cursor:pointer;
+      font-weight:900;
+      color:var(--text);
+    }
+    .btn.primary{
+      background:var(--blue);
+      border-color:rgba(47,111,237,.75);
+    }
+    .btn.primary:hover{background:var(--blue2)}
+    .btn.icon{width:40px;height:40px;display:grid;place-items:center}
+
+    /* Layout: board + archive sidebar */
+    .wrap{padding:14px}
+    .layout{
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap:12px;
+      align-items:start;
+    }
+
+    .board{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(240px, 1fr));
+      gap:12px;
+      align-items:start;
+    }
+
+    .col{border-radius:var(--radius)}
+    .col-head{
+      display:flex;align-items:center;gap:8px;
+      padding:10px 10px 8px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .col-title{
+      font-weight:1000;
+      color:#dbeafe;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      letter-spacing:.2px;
+    }
+    .badge{
+      background:rgba(148,163,184,.10);
+      border:1px solid rgba(148,163,184,.18);
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:12px;
+      color:#cbd5e1;
+      font-weight:1000;
+    }
+    .col-tools{margin-left:auto;display:flex;gap:6px}
+    .mini{
+      width:30px;height:30px;border-radius:10px;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(15,23,42,.92);
+      cursor:pointer;display:grid;place-items:center;
+      color:#cbd5e1;font-weight:1000;
+      user-select:none;
+    }
+
+    .add-row{
+      display:flex;align-items:center;gap:8px;
+      padding:0 10px 10px;
+    }
+    .add-plus{
+      width:36px;height:36px;border-radius:12px;
+      background:rgba(148,163,184,.10);
+      border:1px dashed rgba(148,163,184,.35);
+      cursor:pointer;
+      display:grid;place-items:center;
+      color:#93c5fd;
+      font-weight:1000;
+      font-size:18px;
+      user-select:none;
+    }
+    .add-input{
+      flex:1;
+      background:rgba(148,163,184,.06);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:12px;
+      padding:10px 11px;
+      font-size:13px;
+      outline:none;
+      color:var(--text);
+    }
+    .add-input::placeholder{color:#94a3b8}
+
+    .cards{
+      padding:0 10px 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height:40px;
+    }
+
+    .card{
+      background:rgba(15,23,42,.95);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      padding:10px 10px 9px;
+      cursor:pointer;
+      position:relative;
+    }
+    .card:hover{border-color:rgba(147,197,253,.35)}
+    .card.dragging{opacity:.7}
+
+    .card-top{display:flex;align-items:center;gap:8px}
+    .avatar{
+        width:26px;
+ 	height:26px;
+  	border-radius:999px;
+  	background-image: url("perfil.png"); /* 👈 nome do arquivo */
+  	background-size: cover;
+  	background-position: center;
+  	border:1px solid rgba(148,163,184,.25);
+  	flex:0 0 auto;
+    }
+    .title{
+      font-weight:500;
+      font-size:13px;
+      color:#e5e7eb;
+      line-height:1.25;
+      flex:1;
+      min-width:0;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .kebab{
+      width:30px;height:30px;border-radius:10px;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(15,23,42,.95);
+      display:grid;place-items:center;
+      color:#cbd5e1;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .meta{
+      margin-top:8px;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;gap:6px;
+      padding:3px 9px;
+      border-radius:999px;
+      font-weight:500;
+      font-size:11.5px;
+      white-space:nowrap;
+      border:1px solid transparent;
+      user-select:none;
+    }
+    .chip.today{  background:var(--chip-today-bg);  border-color:var(--chip-today-bd);  color:var(--chip-today-tx); }
+    .chip.future{ background:var(--chip-future-bg); border-color:var(--chip-future-bd); color:var(--chip-future-tx); }
+    .chip.overdue{background:var(--chip-overdue-bg);border-color:var(--chip-overdue-bd);color:var(--chip-overdue-tx); }
+    .chip.none{   background:var(--chip-none-bg);   border-color:var(--chip-none-bd);   color:var(--chip-none-tx); }
+
+    .icons{display:flex;gap:6px;align-items:center}
+    .linkicon{
+      width:20px;height:20px;border-radius:8px;
+      border:1px solid rgba(148,163,184,.18);
+      display:grid;place-items:center;
+      color:#cbd5e1;
+      background:rgba(148,163,184,.06);
+      font-size:12px;
+      user-select:none;
+    }
+
+    /* Kebab menu */
+    .menu{
+      position:absolute;
+      top:40px;
+      right:10px;
+      width:200px;
+      background:rgba(15,23,42,.98);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      display:none;
+      z-index:20;
+    }
+    .menu.open{display:block}
+    .menu button{
+      width:100%;
+      border:none;
+      background:transparent;
+      text-align:left;
+      padding:11px 12px;
+      cursor:pointer;
+      font-weight:1000;
+      color:#e5e7eb;
+      font-size:13px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .menu button:hover{background:rgba(148,163,184,.08)}
+    .menu .sep{height:1px;background:rgba(148,163,184,.18)}
+    .danger{color:#fca5a5}
+
+    /* Sidebar Arquivado (dropzone) */
+    .side{position:sticky; top:72px; height:calc(100vh - 92px)}
+    .side-card{
+      background:rgba(15,23,42,.95);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:16px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.25);
+      padding:14px;
+      transition:.12s ease;
+      user-select:none;
+    }
+    .side-card.drop-active{
+      outline:2px dashed rgba(59,130,246,.85);
+      outline-offset:4px;
+      transform: translateY(-1px);
+    }
+    .side-title{
+      display:flex;align-items:center;justify-content:space-between;
+      font-weight:1000;
+      color:#e5e7eb;
+      margin-bottom:12px;
+    }
+    .big{
+      font-size:34px;
+      font-weight:1000;
+      color:#93c5fd;
+      margin:10px 0 0;
+      text-align:center;
+    }
+    .side-sub{
+      text-align:center;
+      color:var(--muted);
+      font-weight:1000;
+      margin-top:6px;
+      font-size:12px;
+    }
+    .side-actions{
+      display:flex;
+      justify-content:center;
+      margin-top:12px;
+    }
+    .hint{
+      color:#94a3b8;
+      font-weight:900;
+      font-size:12px;
+      margin-top:10px;
+      text-align:center;
+    }
+
+    /* Modal base */
+    .overlay{
+      position:fixed;inset:0;
+      background:rgba(2,6,23,.72);
+      display:none;
+      align-items:flex-start;
+      justify-content:center;
+      padding:22px;
+      z-index:50;
+    }
+    .overlay.open{display:flex}
+
+    .modal{
+      width:min(1120px, 96vw);
+      background:rgba(15,23,42,.98);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.18);
+      max-height: calc(100vh - 44px);
+      display:flex;
+      flex-direction:column;
+    }
+    .modal-top{
+      display:flex;align-items:center;gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(148,163,184,.18);
+      background:rgba(11,19,38,.85);
+    }
+    .modal-title{
+      font-weight:1000;
+      color:#e5e7eb;
+      flex:1;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .due-wrap{display:flex;align-items:center;gap:8px}
+    .due-pill{
+      display:flex;align-items:center;gap:8px;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(148,163,184,.06);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-weight:1000;
+      color:#e5e7eb;
+      font-size:13px;
+      user-select:none;
+    }
+    .due-pill small{color:var(--muted);font-weight:1000}
+    .select{
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:12px;
+      padding:8px 10px;
+      background:rgba(148,163,184,.06);
+      font-weight:1000;
+      cursor:pointer;
+      color:#e5e7eb;
+      outline:none;
+    }
+    .modal-close{
+      width:40px;height:40px;border-radius:12px;
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(148,163,184,.06);
+      cursor:pointer;
+      font-size:18px;
+      color:#e5e7eb;
+    }
+
+    .modal-body{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:0;
+      overflow:auto;
+    }
+    .left{padding:14px;border-right:1px solid rgba(148,163,184,.18)}
+    .right{padding:14px;background:rgba(11,19,38,.55)}
+
+    .section{
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      background:rgba(15,23,42,.92);
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .sec-head{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .sec-title{font-weight:1000;font-size:13px;color:#e5e7eb}
+    .textarea, .input{
+      width:100%;
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:12px;
+      padding:10px;
+      font-size:13px;
+      outline:none;
+      background:rgba(148,163,184,.06);
+      color:#e5e7eb;
+    }
+    .textarea{min-height:140px;resize:vertical}
+    .row{display:flex;gap:8px;align-items:center}
+
+    .tabs{
+      display:flex;gap:10px;
+      border-bottom:1px solid rgba(148,163,184,.18);
+      padding-bottom:8px;
+      margin-bottom:10px;
+    }
+    .tab{
+      font-weight:1000;
+      font-size:12px;
+      color:#94a3b8;
+      cursor:pointer;
+      padding:6px 10px;
+      border-radius:999px;
+      user-select:none;
+    }
+    .tab.active{
+      color:#93c5fd;
+      background:rgba(59,130,246,.14);
+      border:1px solid rgba(59,130,246,.22);
+    }
+
+    .timeline{
+      display:flex;flex-direction:column;gap:10px;
+      max-height:420px; overflow:auto; padding-right:6px;
+    }
+    .entry{display:flex;gap:10px;align-items:flex-start}
+    .bub{
+      width:28px;height:28px;border-radius:999px;
+      background:rgba(59,130,246,.18);
+      display:grid;place-items:center;
+      color:#93c5fd;font-weight:1000;font-size:12px;
+      flex:0 0 auto;
+      user-select:none;
+      border:1px solid rgba(59,130,246,.22);
+    }
+    .bubble{
+      background:rgba(148,163,184,.06);
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      padding:10px;
+      width:100%;
+    }
+    .bubble .meta2{
+      display:flex;justify-content:space-between;gap:10px;
+      font-size:11.5px;color:var(--muted);
+      margin-bottom:6px;font-weight:1000;
+    }
+    .bubble .txt{
+      font-size:13px;color:#e5e7eb;line-height:1.35;
+      white-space:pre-wrap;word-break:break-word;
+    }
+
+    /* Archive modal list */
+    .arch-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height: 60vh;
+      overflow:auto;
+      padding-right:6px;
+    }
+    .arch-item{
+      border:1px solid rgba(148,163,184,.18);
+      border-radius:14px;
+      padding:10px;
+      background:rgba(148,163,184,.06);
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .arch-item .meta3{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:1000;
+      margin-top:4px;
+    }
+    .arch-item .actions{
+      margin-left:auto;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .arch-item .actions button{
+      border:1px solid rgba(148,163,184,.18);
+      background:rgba(15,23,42,.92);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-weight:1000;
+      font-size:12px;
+      color:#e5e7eb;
+    }
+    .arch-item .actions button:hover{background:rgba(148,163,184,.10)}
+
+    /* Responsive */
+    @media (max-width: 1180px){
+      .layout{grid-template-columns: 1fr}
+      .side{position:relative;top:auto;height:auto}
+    }
+    @media (max-width: 1100px){
+      .board{grid-template-columns: repeat(2, 1fr)}
+      .modal-body{grid-template-columns:1fr}
+      .left{border-right:none;border-bottom:1px solid rgba(148,163,184,.18)}
+    }
+    @media (max-width: 560px){
+      .board{grid-template-columns: 1fr}
+      .search{display:none}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="dot"></div>
+    <div class="user">Eliel C.</div>
+    <div class="spacer"></div>
+    <div class="search">🔎 <span>Filtrar por palavra</span></div>
+    <button class="btn primary" id="filterBtn">Filtrar</button>
+    <button class="btn icon" title="Config">⚙️</button>
+    <button class="btn icon" title="Mais">⋯</button>
+  </div>
+
+  <div class="wrap">
+    <div class="layout">
+      <div class="board" id="board"></div>
+
+      <!-- Arquivado / Lixeira -->
+      <div class="side">
+        <div class="side-card" id="archiveDrop" title="Arraste cards aqui para arquivar">
+          <div class="side-title">
+            <span>Arquivado</span>
+            <span class="badge" id="archBadge">0</span>
+          </div>
+
+          <div style="text-align:center;color:#94a3b8;font-weight:1000;margin-top:18px;">🗄️</div>
+          <div style="text-align:center;color:#94a3b8;font-weight:1000;margin-top:10px;font-size:12px;">
+            Arraste cards aqui (lixeira)
+          </div>
+
+          <div class="big" id="archCount">0</div>
+          <div class="side-sub">cards arquivados</div>
+
+          <div class="side-actions">
+            <button class="btn primary" id="viewArchivedBtn">Visualizar Todos</button>
+          </div>
+
+          <div class="hint">Cards arquivados ficam ocultos do quadro.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Card -->
+  <div class="overlay" id="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-top">
+        <div class="modal-title" id="modalTitle">Card</div>
+
+        <div class="due-wrap">
+          <div class="due-pill" id="duePill" title="Prazo">
+            📅 <small id="dueLabel">Hoje</small>
+          </div>
+          <select class="select" id="dueQuick">
+            <option value="">Prazo rápido</option>
+            <option value="today">Hoje</option>
+            <option value="tomorrow">Amanhã</option>
+            <option value="in3">+3 dias</option>
+            <option value="in7">+7 dias</option>
+            <option value="none">Sem prazo</option>
+          </select>
+          <input class="select" id="dueDate" type="date" />
+        </div>
+
+        <button class="modal-close" id="closeModal" title="Fechar">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="left">
+          <div class="section">
+            <div class="sec-head">
+              <div class="sec-title">Detalhes do card</div>
+              <div class="muted" style="font-weight:1000;font-size:12px" id="cardWhere">—</div>
+            </div>
+            <textarea class="textarea" id="details" placeholder="Escrever detalhes do card..."></textarea>
+            <div class="row" style="margin-top:10px;justify-content:flex-end">
+              <button class="btn" id="archiveFromModalBtn" title="Arquivar este card">🗄️ Arquivar</button>
+              <button class="btn" id="deleteCardBtn" style="border-color:rgba(239,68,68,.35);color:#fca5a5">
+                🗑️ Excluir
+              </button>
+              <button class="btn primary" id="saveDetailsBtn">Salvar</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="sec-head">
+              <div class="sec-title">Checklist</div>
+              <div class="muted" style="font-weight:1000;font-size:12px">opcional</div>
+            </div>
+            <div class="row">
+              <input class="input" id="newTask" placeholder="Adicionar tarefa do card..." />
+              <button class="btn primary" id="addTaskBtn">Adicionar</button>
+            </div>
+            <div id="taskList" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+
+        <div class="right">
+          <div class="section">
+            <div class="sec-head">
+              <div class="sec-title">Timeline</div>
+              <div class="muted" style="font-weight:1000;font-size:12px">anotações + registros</div>
+            </div>
+
+            <div class="tabs">
+              <div class="tab active" data-tab="all">TODOS</div>
+              <div class="tab" data-tab="notes">ANOTAÇÕES</div>
+              <div class="tab" data-tab="logs">REGISTROS</div>
+            </div>
+
+            <div class="row" style="margin-bottom:10px">
+              <input class="input" id="newNote" placeholder="Escreva uma anotação neste card..." />
+              <button class="btn primary" id="addNoteBtn">Enviar</button>
+            </div>
+
+            <div class="timeline" id="timeline"></div>
+          </div>
+
+          <div class="muted" style="font-weight:1000;font-size:12px">
+            Arraste cards entre colunas. Arraste para “Arquivado” para esconder do quadro.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Arquivados -->
+  <div class="overlay" id="archOverlay">
+    <div class="modal" role="dialog" aria-modal="true" style="width:min(980px, 96vw);">
+      <div class="modal-top">
+        <div class="modal-title">Arquivados</div>
+        <button class="btn" id="clearArchivedBtn" title="Limpar arquivados">🧹 Limpar</button>
+        <button class="modal-close" id="closeArch" title="Fechar">×</button>
+      </div>
+      <div style="padding:14px;overflow:auto;">
+        <div class="muted" style="font-weight:1000;font-size:12px;margin-bottom:10px;">
+          Cards arquivados ficam fora do quadro. Você pode restaurar ou excluir.
+        </div>
+        <div class="arch-list" id="archList"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Alert simples pra qualquer erro (pra não ficar “tela em branco”) */
+window.onerror = (msg, src, line, col, err) => {
+  alert("Erro no Kanban:\n" + msg + "\nLinha: " + line + ":" + col);
+  console.error(err || msg);
+};
+
+(() => {
+  const STORAGE_KEY = "ummense_like_kanban_dark_v1";
+
+  const COLS = [
+    { id:"backlog", title:"Backlog", icon:"📥" },
+    { id:"todo",    title:"A fazer", icon:"🎯" },
+    { id:"doing",   title:"Em andamento", icon:"⏳" },
+    { id:"review",  title:"Revisão", icon:"🔎" },
+    { id:"done",    title:"Concluído", icon:"🏁" },
+  ];
+
+  const nowTs = () => Date.now();
+  const pad = n => String(n).padStart(2,"0");
+  const fmt = (ts) => {
+    const d = new Date(ts);
+    const dd = pad(d.getDate()), mm = pad(d.getMonth()+1), yyyy = d.getFullYear();
+    const hh = pad(d.getHours()), mi = pad(d.getMinutes());
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+  };
+
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dateISO = (ts) => {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  };
+
+  function dueHuman(dueTs){
+    if (!dueTs) return "Sem prazo";
+    const today = startOfDay(new Date());
+    const d = startOfDay(new Date(dueTs));
+    const diff = Math.round((d - today) / (24*3600*1000));
+    if (diff === 0) return "Hoje";
+    if (diff === 1) return "Amanhã";
+    if (diff === -1) return "Ontem";
+    if (diff > 1) return `Em ${diff} dias`;
+    return `Atrasado (${Math.abs(diff)}d)`;
+  }
+
+  function dueClass(dueTs){
+    if (!dueTs) return "none";
+    const today = startOfDay(new Date());
+    const d = startOfDay(new Date(dueTs));
+    const diff = Math.round((d - today) / (24*3600*1000));
+    if (diff === 0) return "today";
+    if (diff > 0) return "future";
+    return "overdue";
+  }
+
+  function uid(){
+    return Math.random().toString(16).slice(2) + "-" + Math.random().toString(16).slice(2);
+  }
+
+  function colName(colId){
+    return (COLS.find(c=>c.id===colId)?.title) || colId;
+  }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function seed(){
+    return {
+      cards: {},
+      columns: { backlog:[], todo:[], doing:[], review:[], done:[] },
+      archived: []
+    };
+  }
+
+  function seedWithExamples(){
+    const s = seed();
+
+    const make = (title, col, dueKind) => {
+      const id = uid();
+      let due = null;
+      const base = startOfDay(new Date());
+
+      if (dueKind === "today") due = base;
+      if (dueKind === "tomorrow") due = base + 1*24*3600*1000;
+      if (dueKind === "overdue") due = base - 1*24*3600*1000;
+
+      s.cards[id] = {
+        id, title,
+        details: "",
+        dueTs: due,
+        createdAt: nowTs(),
+        tasks: [],
+        timeline: [
+          { type:"log", ts: nowTs(), text:"Criou o card." },
+          { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(col)}.` },
+          ...(dueKind ? [{ type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` }] : [])
+        ]
+      };
+      s.columns[col].push(id);
+    };
+
+    make("[3D Cure] Cadastrar tarefas TaskRush", "todo", "today");
+    make("[Under] Verificar orçamentos/campanhas/URLs ativas", "todo", "today");
+    make("[Paytrack] Novos públicos LinkedIn", "todo", "tomorrow");
+    make("[Paytrack] Otimização de ads", "review", "overdue");
+    make("[TODOS] atualizar planilhas de clientes", "doing", null);
+    make("[Sestini] Demandas reunião", "done", null);
+
+    return s;
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return seedWithExamples();
+      const parsed = JSON.parse(raw);
+
+      parsed.cards ||= {};
+      parsed.columns ||= {};
+      parsed.archived ||= [];
+
+      // Garantir colunas
+      for (const c of COLS) parsed.columns[c.id] ||= [];
+
+      return parsed;
+    }catch{
+      return seedWithExamples();
+    }
+  }
+
+  let state = load();
+
+  // ✅ sanitiza para nunca quebrar por id órfão
+  function sanitizeState(){
+    for (const c of COLS){
+      const arr = state.columns[c.id] || [];
+      state.columns[c.id] = arr.filter(id => state.cards && state.cards[id]);
+    }
+    state.archived = (state.archived || []).filter(id => state.cards && state.cards[id]);
+  }
+  sanitizeState();
+
+  function updateArchivedSidebar(){
+    const archBadge = document.getElementById("archBadge");
+    const archCount = document.getElementById("archCount");
+    if (!archBadge || !archCount) return;
+    const n = state.archived.length;
+    archBadge.textContent = n;
+    archCount.textContent = n;
+  }
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    updateArchivedSidebar();
+  }
+
+  // Helpers
+  function findCardColumn(cardId){
+    for (const col of COLS){
+      const arr = state.columns[col.id];
+      const idx = arr.indexOf(cardId);
+      if (idx >= 0) return col.id;
+    }
+    return null;
+  }
+  function removeFromAllColumns(cardId){
+    for (const col of COLS){
+      const arr = state.columns[col.id];
+      const i = arr.indexOf(cardId);
+      if (i >= 0) arr.splice(i, 1);
+    }
+  }
+
+  function log(cardId, text){
+    const c = state.cards[cardId];
+    if (!c) return;
+    c.timeline.unshift({ type:"log", ts: nowTs(), text });
+    save();
+  }
+  function note(cardId, text){
+    const c = state.cards[cardId];
+    if (!c) return;
+    c.timeline.unshift({ type:"note", ts: nowTs(), text });
+    save();
+  }
+
+  function createCard(title, colId){
+    const id = uid();
+    const due = startOfDay(new Date()); // default Hoje
+    state.cards[id] = {
+      id,
+      title,
+      details:"",
+      dueTs: due,
+      createdAt: nowTs(),
+      tasks: [],
+      timeline: [
+        { type:"log", ts: nowTs(), text:"Criou o card." },
+        { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
+        { type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` },
+      ]
+    };
+    state.columns[colId].unshift(id);
+    save();
+    render();
+  }
+
+  function structuredCloneSafe(obj){
+    try { return structuredClone(obj); }
+    catch { return JSON.parse(JSON.stringify(obj)); }
+  }
+
+  function duplicateCard(cardId){
+    const c = state.cards[cardId];
+    if (!c) return;
+    const colId = findCardColumn(cardId) || "todo";
+    const id = uid();
+
+    state.cards[id] = {
+      ...structuredCloneSafe(c),
+      id,
+      title: c.title + " (cópia)",
+      createdAt: nowTs(),
+      timeline: [
+        { type:"log", ts: nowTs(), text:"Criou o card (duplicado)." },
+        { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
+      ]
+    };
+    state.columns[colId].unshift(id);
+    save();
+    render();
+  }
+
+  function archiveCard(cardId){
+    const c = state.cards[cardId];
+    if (!c) return;
+    const from = findCardColumn(cardId);
+
+    removeFromAllColumns(cardId);
+    if (!state.archived.includes(cardId)) state.archived.unshift(cardId);
+
+    log(cardId, `Arquivou o card${from ? ` (veio de ${colName(from)})` : ""}.`);
+    save();
+    render();
+  }
+
+  function restoreCard(cardId, toCol="todo"){
+    const c = state.cards[cardId];
+    if (!c) return;
+
+    state.archived = state.archived.filter(id => id !== cardId);
+    state.columns[toCol].unshift(cardId);
+    log(cardId, `Restaurou o card para ${colName(toCol)}.`);
+    save();
+    render();
+  }
+
+  function deleteCard(cardId){
+    removeFromAllColumns(cardId);
+    state.archived = state.archived.filter(id => id !== cardId);
+    delete state.cards[cardId];
+    save();
+    render();
+  }
+
+  function moveCard(cardId, toCol){
+    const from = findCardColumn(cardId);
+    if (!from || from === toCol) return;
+
+    const idx = state.columns[from].indexOf(cardId);
+    if (idx >= 0) state.columns[from].splice(idx, 1);
+    state.columns[toCol].unshift(cardId);
+
+    log(cardId, `Moveu o card de ${colName(from)} → ${colName(toCol)}.`);
+    save();
+    render();
+
+    if (activeCardId === cardId){
+      document.getElementById("cardWhere").textContent = `Na coluna: ${colName(toCol)}`;
+    }
+  }
+
+  // DOM
+  const board = document.getElementById("board");
+  const archiveDrop = document.getElementById("archiveDrop");
+  const viewArchivedBtn = document.getElementById("viewArchivedBtn");
+
+  // Card modal refs
+  const overlay = document.getElementById("overlay");
+  const modalTitle = document.getElementById("modalTitle");
+  const details = document.getElementById("details");
+  const cardWhere = document.getElementById("cardWhere");
+  const timelineEl = document.getElementById("timeline");
+  const dueLabel = document.getElementById("dueLabel");
+  const dueQuick = document.getElementById("dueQuick");
+  const dueDate = document.getElementById("dueDate");
+  const newNote = document.getElementById("newNote");
+  const addNoteBtn = document.getElementById("addNoteBtn");
+  const saveDetailsBtn = document.getElementById("saveDetailsBtn");
+  const deleteCardBtn = document.getElementById("deleteCardBtn");
+  const closeModal = document.getElementById("closeModal");
+  const archiveFromModalBtn = document.getElementById("archiveFromModalBtn");
+
+  const newTask = document.getElementById("newTask");
+  const addTaskBtn = document.getElementById("addTaskBtn");
+  const taskList = document.getElementById("taskList");
+
+  // Archive modal refs
+  const archOverlay = document.getElementById("archOverlay");
+  const closeArch = document.getElementById("closeArch");
+  const archList = document.getElementById("archList");
+  const clearArchivedBtn = document.getElementById("clearArchivedBtn");
+
+  let activeCardId = null;
+  let activeTab = "all";
+
+  // Menus
+  function closeAllMenus(){
+    document.querySelectorAll(".menu.open").forEach(m => m.classList.remove("open"));
+  }
+  document.addEventListener("click", closeAllMenus);
+
+  function openMovePrompt(cardId){
+    const options = COLS.map((c,i)=> `${i+1}) ${c.title}`).join("\n");
+    const ans = prompt("Mover para qual coluna?\n\n" + options + "\n\nDigite o número:");
+    if (!ans) return;
+    const idx = Number(ans) - 1;
+    if (Number.isNaN(idx) || idx < 0 || idx >= COLS.length) return;
+    moveCard(cardId, COLS[idx].id);
+  }
+
+  // Render board
+  function render(){
+    board.innerHTML = "";
+
+    for (const col of COLS){
+      const colEl = document.createElement("div");
+      colEl.className = "col";
+      colEl.dataset.col = col.id;
+
+      colEl.innerHTML = `
+        <div class="col-head">
+          <span class="col-title">${col.icon} ${col.title}</span>
+          <span class="badge">${state.columns[col.id].length}</span>
+          <div class="col-tools">
+            <button class="mini" title="Config">≡</button>
+            <button class="mini" title="Mais">⋯</button>
+          </div>
+        </div>
+
+        <div class="add-row">
+          <button class="add-plus" title="Adicionar card">+</button>
+          <input class="add-input" placeholder="Adicionar um card..." />
+        </div>
+
+        <div class="cards" data-drop="${col.id}"></div>
+      `;
+
+      // Add card
+      const plus = colEl.querySelector(".add-plus");
+      const input = colEl.querySelector(".add-input");
+      plus.addEventListener("click", () => {
+        const t = input.value.trim();
+        if (!t) return;
+        createCard(t, col.id);
+        input.value = "";
+      });
+      input.addEventListener("keydown", (e)=>{
+        if (e.key === "Enter"){
+          const t = input.value.trim();
+          if (!t) return;
+          createCard(t, col.id);
+          input.value = "";
+        }
+      });
+
+      // Drop area
+      const list = colEl.querySelector(".cards");
+      list.addEventListener("dragover", (e)=> e.preventDefault());
+      list.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
+
+      // Cards
+      for (const id of state.columns[col.id]){
+        const c = state.cards[id];
+        if (!c) continue;
+
+        const cardEl = document.createElement("div");
+        cardEl.className = "card";
+        cardEl.draggable = true;
+        cardEl.dataset.id = id;
+
+        const dueTxt = dueHuman(c.dueTs);
+        const chip = `<span class="chip ${dueClass(c.dueTs)}">📅 ${dueTxt}</span>`;
+
+        cardEl.innerHTML = `
+          <div class="card-top">
+            <div class="avatar"></div>
+            <div class="title">${escapeHtml(c.title)}</div>
+            <button class="kebab" title="Ações" data-kebab>⋮</button>
+
+            <div class="menu" data-menu>
+              <button data-act="dup">📄 Duplicar</button>
+              <button data-act="move">📦 Mover…</button>
+              <div class="sep"></div>
+              <button data-act="arch">🗄️ Arquivar</button>
+              <button data-act="del" class="danger">🗑️ Excluir</button>
+            </div>
+          </div>
+          <div class="meta">
+            ${chip}
+            <div class="icons">
+              <div class="linkicon" title="Link (demo)">↗</div>
+              <div class="linkicon" title="Info">i</div>
+            </div>
+          </div>
+        `;
+
+        const kebab = cardEl.querySelector("[data-kebab]");
+        const menu  = cardEl.querySelector("[data-menu]");
+
+        kebab.addEventListener("click", (ev)=>{
+          ev.stopPropagation();
+          closeAllMenus();
+          menu.classList.toggle("open");
+        });
+
+        menu.addEventListener("click", (ev)=>{
+          ev.stopPropagation();
+          const act = ev.target?.dataset?.act;
+          if (!act) return;
+          menu.classList.remove("open");
+
+          if (act === "dup") return duplicateCard(id);
+          if (act === "move") return openMovePrompt(id);
+          if (act === "arch") return archiveCard(id);
+          if (act === "del"){
+            if (!confirm("Excluir este card?")) return;
+            if (activeCardId === id) closeCard();
+            return deleteCard(id);
+          }
+        });
+
+        cardEl.addEventListener("click", ()=>{
+          closeAllMenus();
+          openCard(id, col.id);
+        });
+
+        cardEl.addEventListener("dragstart", (e)=>{
+          closeAllMenus();
+          cardEl.classList.add("dragging");
+          e.dataTransfer.setData("text/plain", JSON.stringify({ cardId:id, from: col.id }));
+        });
+        cardEl.addEventListener("dragend", ()=> cardEl.classList.remove("dragging"));
+
+        list.appendChild(cardEl);
+      }
+
+      board.appendChild(colEl);
+    }
+
+    updateArchivedSidebar();
+  }
+
+  function onDropToColumn(e, toCol){
+    e.preventDefault();
+    try{
+      const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
+      const { cardId, from } = payload;
+      if (!cardId || !from) return;
+      if (from === toCol) return;
+
+      const idx = state.columns[from].indexOf(cardId);
+      if (idx >= 0) state.columns[from].splice(idx, 1);
+      state.columns[toCol].unshift(cardId);
+
+      log(cardId, `Moveu o card de ${colName(from)} → ${colName(toCol)}.`);
+      save();
+      render();
+
+      if (activeCardId === cardId){
+        cardWhere.textContent = `Na coluna: ${colName(toCol)}`;
+      }
+    }catch{}
+  }
+
+  // Archive as dropzone
+  if (archiveDrop){
+    archiveDrop.addEventListener("dragover", (e)=> e.preventDefault());
+    archiveDrop.addEventListener("dragenter", ()=> archiveDrop.classList.add("drop-active"));
+    archiveDrop.addEventListener("dragleave", ()=> archiveDrop.classList.remove("drop-active"));
+    archiveDrop.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      archiveDrop.classList.remove("drop-active");
+      try{
+        const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
+        const { cardId } = payload;
+        if (!cardId) return;
+        archiveCard(cardId);
+      }catch{}
+    });
+  }
+
+  // Card modal
+  function openCard(cardId, colId){
+    activeCardId = cardId;
+    activeTab = "all";
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    document.querySelector('.tab[data-tab="all"]')?.classList.add("active");
+
+    const c = state.cards[cardId];
+    modalTitle.textContent = c.title;
+    details.value = c.details || "";
+    cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+
+    dueLabel.textContent = dueHuman(c.dueTs);
+    dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+
+    renderTimeline();
+    renderTasks();
+
+    overlay.classList.add("open");
+  }
+
+  function closeCard(){
+    overlay.classList.remove("open");
+    activeCardId = null;
+    newNote.value = "";
+    newTask.value = "";
+  }
+
+  closeModal.addEventListener("click", closeCard);
+  overlay.addEventListener("click", (e)=>{ if (e.target === overlay) closeCard(); });
+  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
+
+  saveDetailsBtn.addEventListener("click", ()=>{
+    if (!activeCardId) return;
+    const c = state.cards[activeCardId];
+    const prev = c.details || "";
+    const next = details.value || "";
+    c.details = next;
+    if (prev !== next) log(activeCardId, "Atualizou os detalhes do card.");
+    save();
+    render();
+  });
+
+  archiveFromModalBtn.addEventListener("click", ()=>{
+    if (!activeCardId) return;
+    const id = activeCardId;
+    closeCard();
+    archiveCard(id);
+  });
+
+  deleteCardBtn.addEventListener("click", ()=>{
+    if (!activeCardId) return;
+    if (!confirm("Excluir este card?")) return;
+    const id = activeCardId;
+    closeCard();
+    deleteCard(id);
+  });
+
+  // Tabs
+  document.querySelectorAll(".tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      activeTab = tab.dataset.tab;
+      renderTimeline();
+    });
+  });
+
+  // Notes
+  addNoteBtn.addEventListener("click", ()=>{
+    if (!activeCardId) return;
+    const t = newNote.value.trim();
+    if (!t) return;
+    note(activeCardId, t);
+    newNote.value = "";
+    renderTimeline();
+  });
+  newNote.addEventListener("keydown", (e)=>{
+    if (e.key === "Enter"){
+      e.preventDefault();
+      addNoteBtn.click();
+    }
+  });
+
+  // Due
+  dueQuick.addEventListener("change", ()=>{
+    if (!activeCardId) return;
+    const v = dueQuick.value;
+    const c = state.cards[activeCardId];
+    const before = c.dueTs;
+
+    if (v === "none"){
+      c.dueTs = null;
+      log(activeCardId, "Removeu o prazo do card.");
+    } else {
+      const base = startOfDay(new Date());
+      if (v === "today") c.dueTs = base;
+      if (v === "tomorrow") c.dueTs = base + 1*24*3600*1000;
+      if (v === "in3") c.dueTs = base + 3*24*3600*1000;
+      if (v === "in7") c.dueTs = base + 7*24*3600*1000;
+
+      const after = c.dueTs;
+      if (before !== after) log(activeCardId, `Definiu o prazo do card para ${dueHuman(after)}.`);
+    }
+
+    dueLabel.textContent = dueHuman(c.dueTs);
+    dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+    save();
+    render();
+    renderTimeline();
+    dueQuick.value = "";
+  });
+
+  dueDate.addEventListener("change", ()=>{
+    if (!activeCardId) return;
+    const c = state.cards[activeCardId];
+    const v = dueDate.value;
+    const before = c.dueTs;
+
+    if (!v){
+      c.dueTs = null;
+      log(activeCardId, "Removeu o prazo do card.");
+    } else {
+      const [y,m,d] = v.split("-").map(Number);
+      const ts = startOfDay(new Date(y, m-1, d));
+      c.dueTs = ts;
+      if (before !== ts) log(activeCardId, `Definiu o prazo do card para ${dueHuman(ts)} (${v}).`);
+    }
+
+    dueLabel.textContent = dueHuman(c.dueTs);
+    save();
+    render();
+    renderTimeline();
+  });
+
+  // Checklist
+  addTaskBtn.addEventListener("click", ()=>{
+    if (!activeCardId) return;
+    const t = newTask.value.trim();
+    if (!t) return;
+    const c = state.cards[activeCardId];
+    c.tasks.push({ id: uid(), text: t, done:false });
+    log(activeCardId, "Adicionou uma tarefa no checklist.");
+    newTask.value = "";
+    save();
+    renderTasks();
+    renderTimeline();
+  });
+
+  function renderTasks(){
+    if (!activeCardId) return;
+    const c = state.cards[activeCardId];
+    taskList.innerHTML = "";
+
+    if (!c.tasks.length){
+      taskList.innerHTML = `<div class="muted" style="font-weight:1000;font-size:12px;">Sem tarefas no checklist.</div>`;
+      return;
+    }
+
+    for (const t of c.tasks){
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "8px";
+      row.style.border = "1px solid rgba(148,163,184,.18)";
+      row.style.borderRadius = "12px";
+      row.style.padding = "8px";
+      row.style.background = "rgba(148,163,184,.06)";
+
+      row.innerHTML = `
+        <input type="checkbox" ${t.done ? "checked":""} />
+        <div style="flex:1;font-size:13px;${t.done ? "text-decoration:line-through;color:#94a3b8":""}">${escapeHtml(t.text)}</div>
+        <button class="btn" style="padding:6px 8px;border-radius:12px" title="Excluir">🗑️</button>
+      `;
+
+      const cb = row.querySelector("input");
+      cb.addEventListener("change", ()=>{
+        t.done = cb.checked;
+        log(activeCardId, t.done ? "Concluiu uma tarefa do checklist." : "Reabriu uma tarefa do checklist.");
+        save();
+        renderTasks();
+        renderTimeline();
+      });
+
+      const del = row.querySelector("button");
+      del.addEventListener("click", ()=>{
+        if (!confirm("Excluir esta tarefa?")) return;
+        c.tasks = c.tasks.filter(x=>x.id!==t.id);
+        log(activeCardId, "Excluiu uma tarefa do checklist.");
+        save();
+        renderTasks();
+        renderTimeline();
+      });
+
+      taskList.appendChild(row);
+    }
+  }
+
+  function renderTimeline(){
+    if (!activeCardId) return;
+    const c = state.cards[activeCardId];
+    timelineEl.innerHTML = "";
+
+    const items = c.timeline.filter(it => {
+      if (activeTab === "all") return true;
+      if (activeTab === "notes") return it.type === "note";
+      if (activeTab === "logs") return it.type === "log";
+      return true;
+    });
+
+    if (!items.length){
+      timelineEl.innerHTML = `<div class="muted" style="font-weight:1000;font-size:12px;">Sem itens aqui.</div>`;
+      return;
+    }
+
+    for (const it of items){
+      const el = document.createElement("div");
+      el.className = "entry";
+      el.innerHTML = `
+        <div class="bub">${it.type === "note" ? "📝" : "⏱️"}</div>
+        <div class="bubble">
+          <div class="meta2">
+            <span>${it.type === "note" ? "Eliel Costa" : "Sistema"}</span>
+            <span>${fmt(it.ts)}</span>
+          </div>
+          <div class="txt">${escapeHtml(it.text)}</div>
+        </div>
+      `;
+      timelineEl.appendChild(el);
+    }
+  }
+
+  // Arquivados modal
+  function openArchivedModal(){
+    renderArchivedList();
+    archOverlay.classList.add("open");
+  }
+  function closeArchivedModal(){
+    archOverlay.classList.remove("open");
+  }
+
+  viewArchivedBtn.addEventListener("click", openArchivedModal);
+  closeArch.addEventListener("click", closeArchivedModal);
+  archOverlay.addEventListener("click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
+  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
+
+  clearArchivedBtn.addEventListener("click", ()=>{
+    if (!state.archived.length) return;
+    if (!confirm("Limpar todos os arquivados? (eles serão EXCLUÍDOS)")) return;
+    for (const id of [...state.archived]){
+      delete state.cards[id];
+    }
+    state.archived = [];
+    save();
+    renderArchivedList();
+  });
+
+  function renderArchivedList(){
+    archList.innerHTML = "";
+    if (!state.archived.length){
+      archList.innerHTML = `<div class="muted" style="font-weight:1000;font-size:12px;">Nenhum card arquivado.</div>`;
+      return;
+    }
+
+    for (const id of state.archived){
+      const c = state.cards[id];
+      if (!c) continue;
+
+      const item = document.createElement("div");
+      item.className = "arch-item";
+      item.innerHTML = `
+        <div class="avatar" style="margin-top:2px;">E</div>
+        <div style="min-width:0;">
+          <div style="font-weight:1000;color:#e5e7eb;">${escapeHtml(c.title)}</div>
+          <div class="meta3">Prazo: ${dueHuman(c.dueTs)} • Criado: ${fmt(c.createdAt)}</div>
+        </div>
+        <div class="actions">
+          <button data-act="restore">↩ Restaurar</button>
+          <button data-act="open">🔎 Abrir</button>
+          <button data-act="del" style="color:#fca5a5;border-color:rgba(239,68,68,.35);">🗑 Excluir</button>
+        </div>
+      `;
+
+      item.querySelector('[data-act="restore"]').addEventListener("click", ()=>{
+        restoreCard(id, "todo");
+        renderArchivedList();
+      });
+
+      item.querySelector('[data-act="open"]').addEventListener("click", ()=>{
+        // abre o card restaurando em todo
+        restoreCard(id, "todo");
+        renderArchivedList();
+        closeArchivedModal();
+        openCard(id, "todo");
+      });
+
+      item.querySelector('[data-act="del"]').addEventListener("click", ()=>{
+        if (!confirm("Excluir esse card arquivado?")) return;
+        deleteCard(id);
+        renderArchivedList();
+      });
+
+      archList.appendChild(item);
+    }
+  }
+
+  // Start
+  save();
+  render();
+})();
+</script>
+
+</body>
+</html>
