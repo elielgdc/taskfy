@@ -15,6 +15,77 @@ window.onerror = (msg, src, line, col, err) => {
     { id:"done",    title:"Concluído", icon:"🏁" },
   ];
 
+   // =====================
+// Supabase (Login)
+// =====================
+const SUPABASE_URL = "https://bknethktrrecdfllndyo.supabase.co/";
+const SUPABASE_ANON_KEY = "sb_publishable_9v3vkdV27tpLF059ehpi8A_trs8Lymo";
+let sb = null;
+let sbUser = null;
+
+const authBtn = document.getElementById("authBtn");
+const authStatus = document.getElementById("authStatus");
+
+function setAuthUI(){
+  if (!authBtn) return;
+
+  if (sbUser){
+    authBtn.textContent = "Sair";
+    authBtn.title = "Sair da conta";
+    if (authStatus) authStatus.textContent = sbUser.email || "Logado";
+  } else {
+    authBtn.textContent = "Entrar";
+    authBtn.title = "Entrar para sincronizar";
+    if (authStatus) authStatus.textContent = "";
+  }
+}
+
+function initSupabase(){
+  if (!window.supabase) return;
+  if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // sessão atual
+  sb.auth.getSession().then(({ data })=>{
+    sbUser = data?.session?.user || null;
+    setAuthUI();
+  });
+
+  // mudanças de sessão (login/logout)
+  sb.auth.onAuthStateChange((_event, session)=>{
+    sbUser = session?.user || null;
+    setAuthUI();
+  });
+
+  setAuthUI();
+}
+
+async function signInWithEmail(){
+  if (!sb){
+    alert("Supabase ainda não configurado. Cole SUPABASE_URL e SUPABASE_ANON_KEY no app.js.");
+    return;
+  }
+  const email = prompt("Digite seu email para receber o link de login:");
+  if (!email) return;
+
+  const redirectTo = window.location.origin + window.location.pathname; // volta pro /taskfy
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: redirectTo }
+  });
+
+  if (error){
+    alert("Erro ao enviar link: " + error.message);
+    return;
+  }
+  alert("Link enviado! Abra seu email e clique no link para entrar.");
+}
+
+async function signOut(){
+  if (!sb) return;
+  await sb.auth.signOut();
+}
+  
   const nowTs = () => Date.now();
   const pad = n => String(n).padStart(2,"0");
   const fmt = (ts) => {
@@ -319,77 +390,6 @@ async function save(){
   const board = document.getElementById("board");
   const archiveDrop = document.getElementById("archiveDrop");
   const viewArchivedBtn = document.getElementById("viewArchivedBtn");
-
-  // =====================
-// Supabase (Login)
-// =====================
-const SUPABASE_URL = "https://bknethktrrecdfllndyo.supabase.co/";
-const SUPABASE_ANON_KEY = "sb_publishable_9v3vkdV27tpLF059ehpi8A_trs8Lymo";
-let sb = null;
-let sbUser = null;
-
-const authBtn = document.getElementById("authBtn");
-const authStatus = document.getElementById("authStatus");
-
-function setAuthUI(){
-  if (!authBtn) return;
-
-  if (sbUser){
-    authBtn.textContent = "Sair";
-    authBtn.title = "Sair da conta";
-    if (authStatus) authStatus.textContent = sbUser.email || "Logado";
-  } else {
-    authBtn.textContent = "Entrar";
-    authBtn.title = "Entrar para sincronizar";
-    if (authStatus) authStatus.textContent = "";
-  }
-}
-
-function initSupabase(){
-  if (!window.supabase) return;
-  if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // sessão atual
-  sb.auth.getSession().then(({ data })=>{
-    sbUser = data?.session?.user || null;
-    setAuthUI();
-  });
-
-  // mudanças de sessão (login/logout)
-  sb.auth.onAuthStateChange((_event, session)=>{
-    sbUser = session?.user || null;
-    setAuthUI();
-  });
-
-  setAuthUI();
-}
-
-async function signInWithEmail(){
-  if (!sb){
-    alert("Supabase ainda não configurado. Cole SUPABASE_URL e SUPABASE_ANON_KEY no app.js.");
-    return;
-  }
-  const email = prompt("Digite seu email para receber o link de login:");
-  if (!email) return;
-
-  const redirectTo = window.location.origin + window.location.pathname; // volta pro /taskfy
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo }
-  });
-
-  if (error){
-    alert("Erro ao enviar link: " + error.message);
-    return;
-  }
-  alert("Link enviado! Abra seu email e clique no link para entrar.");
-}
-
-async function signOut(){
-  if (!sb) return;
-  await sb.auth.signOut();
-}
 
 
   // Card modal refs
