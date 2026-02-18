@@ -726,6 +726,11 @@
     <div class="spacer"></div>
     <div class="search">🔎 <span>Filtrar por palavra</span></div>
     <button class="btn primary" id="filterBtn">Filtrar</button>
+    <button class="btn" id="authBtn" title="Entrar para sincronizar">
+  Entrar
+</button>
+<span id="authStatus" class="muted" style="margin-left:8px;font-size:12px"></span>
+
     <button class="btn icon" title="Config">⚙️</button>
     <button class="btn icon" title="Mais">⋯</button>
   </div>
@@ -876,10 +881,12 @@
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="app.js"></script>
   
 </body>
 </html>
+
 
 
 
