@@ -114,26 +114,35 @@ window.onerror = (msg, src, line, col, err) => {
     return s;
   }
 
-  function load(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return seedWithExamples();
-      const parsed = JSON.parse(raw);
+async function load(){
+  // se estiver logado → tenta carregar online
+  if (sbUser && sb){
+    const { data } = await sb
+      .from("boards")
+      .select("data")
+      .eq("user_id", sbUser.id)
+      .single();
 
-      parsed.cards ||= {};
-      parsed.columns ||= {};
-      parsed.archived ||= [];
-
-      // Garantir colunas
-      for (const c of COLS) parsed.columns[c.id] ||= [];
-
-      return parsed;
-    }catch{
-      return seedWithExamples();
+    if (data && data.data){
+      return data.data;
     }
   }
 
-  let state = load();
+  // fallback local
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return seedWithExamples();
+    const parsed = JSON.parse(raw);
+
+    parsed.cards ||= {};
+    parsed.columns ||= {};
+    parsed.archived ||= [];
+
+    fo
+
+
+  let state = seedWithExamples();
+
 
   // ✅ sanitiza para nunca quebrar por id órfão
   function sanitizeState(){
@@ -154,10 +163,22 @@ window.onerror = (msg, src, line, col, err) => {
     archCount.textContent = n;
   }
 
-  function save(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    updateArchivedSidebar();
+async function save(){
+  // se estiver logado → salva online
+  if (sbUser && sb){
+    await sb
+      .from("boards")
+      .upsert({
+        user_id: sbUser.id,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
+    return;
   }
+
+  // fallback local
+  localStorage.setItem("kanban-state", JSON.stringify(state));
+}
 
   // Helpers
   function findCardColumn(cardId){
