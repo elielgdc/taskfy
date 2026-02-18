@@ -387,10 +387,9 @@ window.onerror = (msg, src, line, col, err) => {
       });
 
       // Drop area
-    // Drop area (agora na coluna inteira)
-const dropArea = colEl;
-dropArea.addEventListener("dragover", (e)=> e.preventDefault());
-dropArea.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
+const list = colEl.querySelector(".cards");
+list.addEventListener("dragover", (e)=> e.preventDefault());
+list.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
 
 
       // Cards
