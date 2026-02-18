@@ -297,7 +297,8 @@ window.onerror = (msg, src, line, col, err) => {
   modalTitle.addEventListener("keydown", (e)=>{
   if (e.key === "Enter"){
     e.preventDefault();
-    tryCreateCard();
+    closeCard();
+
   }
 });
   const details = document.getElementById("details");
