@@ -448,6 +448,7 @@ function setAuthUI(){
 }
 
 function initSupabase(){
+  setGateUI(); // mostra a tela de login enquanto não estiver logado
   if (!window.supabase) return;
   if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
   
