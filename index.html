@@ -604,6 +604,15 @@
   z-index: 5;
 }
 
+.due-hidden{
+  position:absolute;
+  left:-9999px;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}    
+    
   </style>
 </head>
 <body>
@@ -658,15 +667,8 @@
           <div class="due-pill" id="duePill" title="Prazo">
             📅 <small id="dueLabel">Hoje</small>
           </div>
-          <select class="select" id="dueQuick">
-            <option value="">Prazo rápido</option>
-            <option value="today">Hoje</option>
-            <option value="tomorrow">Amanhã</option>
-            <option value="in3">+3 dias</option>
-            <option value="in7">+7 dias</option>
-            <option value="none">Sem prazo</option>
-          </select>
-          <input class="select" id="dueDate" type="date" />
+        
+          <input id="dueDate" type="date" class="due-hidden" />
         </div>
 
         <button class="modal-close" id="closeModal" title="Fechar">×</button>
@@ -757,6 +759,7 @@
   
 </body>
 </html>
+
 
 
 
