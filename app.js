@@ -366,9 +366,8 @@ window.onerror = (msg, src, line, col, err) => {
       const plus = colEl.querySelector(".add-plus");
       const input = colEl.querySelector(".add-input");
       plus.addEventListener("click", () => {
-        const id = createCard("Novo card", col.id);
-        // abre o modal do card recém criado
-        openCard(id, col.id);
+        // abre a janela, mas NÃO cria card ainda
+        openCard(null, col.id);
         // opcional: já foca no campo de detalhes
         setTimeout(() => details?.focus?.(), 0);
       });
@@ -514,26 +513,55 @@ window.onerror = (msg, src, line, col, err) => {
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
     document.querySelector('.tab[data-tab="all"]')?.classList.add("active");
 
-    const c = state.cards[cardId];
-    modalTitle.textContent = c.title;
-    details.value = c.details || "";
-    cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+// NOVO CARD (ainda não existe)
+if (!cardId){
+  modalTitle.textContent = "Novo card";
+  details.value = "";
+  cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
-    dueLabel.textContent = dueHuman(c.dueTs);
-    dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+  dueLabel.textContent = "Hoje";
+  dueDate.value = dateISO(startOfDay(new Date()));
 
-    renderTimeline();
-    renderTasks();
+  overlay.dataset.newcol = colId;
+  overlay.classList.add("open");
+  return;
+}
 
-    overlay.classList.add("open");
+// CARD EXISTENTE
+const c = state.cards[cardId];
+modalTitle.textContent = c.title;
+details.value = c.details || "";
+cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+
+dueLabel.textContent = dueHuman(c.dueTs);
+dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+
+renderTimeline();
+renderTasks();
+
+overlay.classList.add("open");
+
   }
 
-  function closeCard(){
-    overlay.classList.remove("open");
-    activeCardId = null;
-    newNote.value = "";
-    newTask.value = "";
+function closeCard(){
+
+  // se estava criando um novo card
+  if (!activeCardId && overlay.dataset.newcol){
+    const title = modalTitle.textContent.trim();
+
+    if (title && title !== "Novo card"){
+      const colId = overlay.dataset.newcol;
+      createCard(title, colId);
+    }
+
+    delete overlay.dataset.newcol;
   }
+
+  overlay.classList.remove("open");
+  activeCardId = null;
+  newNote.value = "";
+  newTask.value = "";
+}
 
   closeModal.addEventListener("click", closeCard);
   overlay.addEventListener("click", (e)=>{ if (e.target === overlay) closeCard(); });
