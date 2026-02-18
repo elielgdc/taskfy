@@ -398,6 +398,12 @@ async function signInWithPassword(email, password){
   if (error) throw error;
 }
 
+async function signUpWithPassword(email, password){
+  if (!sb) return;
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) throw error;
+}
+
 let signingUp = false;
 
 signupBtn?.addEventListener("click", async () => {
