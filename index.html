@@ -546,6 +546,27 @@
       .board{grid-template-columns: 1fr}
       .search{display:none}
     }
+
+    .modalTitleInput{
+  width: 420px;
+  max-width: 52vw;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.modalTitleInput::placeholder{
+  opacity: .6;
+}
+
+.modalTitleInput:focus{
+  background: rgba(255,255,255,.05);
+}
   </style>
 </head>
 <body>
@@ -594,7 +615,7 @@
   <div class="overlay" id="overlay">
     <div class="modal" role="dialog" aria-modal="true">
       <div class="modal-top">
-        <div class="modal-title" id="modalTitle">Card</div>
+        <input class="modal-title modalTitleInput" id="modalTitle" placeholder="Insira o título do card" />
 
         <div class="due-wrap">
           <div class="due-pill" id="duePill" title="Prazo">
@@ -694,6 +715,7 @@
   
 </body>
 </html>
+
 
 
 
