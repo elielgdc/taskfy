@@ -298,7 +298,6 @@ window.onerror = (msg, src, line, col, err) => {
   if (e.key === "Enter"){
     e.preventDefault();
     closeCard();
-
   }
 });
   const details = document.getElementById("details");
