@@ -389,10 +389,11 @@ window.onerror = (msg, src, line, col, err) => {
       // Drop area
 const list = colEl.querySelector(".cards");
 list.addEventListener("dragover", (e)=> e.preventDefault());
-list.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
+list.addEventListener("drop", (e)=> {
+  e.stopPropagation();
+  onDropToColumn(e, col.id);
+});;
 
-colEl.addEventListener("dragover", (e)=> e.preventDefault());
-colEl.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
 
       // Cards
       for (const id of state.columns[col.id]){
@@ -487,6 +488,7 @@ function onDropToColumn(e, toCol){
     // remove da coluna antiga
     const fromIdx = state.columns[from].indexOf(cardId);
     if (fromIdx >= 0) state.columns[from].splice(fromIdx, 1);
+    state.columns[toCol] = state.columns[toCol].filter(id => id !== cardId);
 
     // encontra onde soltar baseado na posição do mouse
     const columnEl = document.querySelector(`[data-col="${toCol}"] .cards`);
