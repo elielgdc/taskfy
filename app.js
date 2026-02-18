@@ -552,7 +552,7 @@ async function signOut(){
   // Card modal refs
   const overlay = document.getElementById("overlay");
   const modalTitle = document.getElementById("modalTitle");
-  modalTitleelemento?.addEventListener"keydown", (e)=>{
+  modalTitle?.addEventListener("keydown", (e) => {
   if (e.key === "Enter"){
     e.preventDefault();
     closeCard();
