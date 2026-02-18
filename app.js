@@ -476,27 +476,45 @@ colEl.addEventListener("drop", (e)=> onDropToColumn(e, col.id));
     updateArchivedSidebar();
   }
 
-  function onDropToColumn(e, toCol){
-    e.preventDefault();
-    try{
-      const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
-      const { cardId, from } = payload;
-      if (!cardId || !from) return;
-      if (from === toCol) return;
+function onDropToColumn(e, toCol){
+  e.preventDefault();
 
-      const idx = state.columns[from].indexOf(cardId);
-      if (idx >= 0) state.columns[from].splice(idx, 1);
-      state.columns[toCol].unshift(cardId);
+  try{
+    const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
+    const { cardId, from } = payload;
+    if (!cardId || !from) return;
 
-      log(cardId, `Moveu o card de ${colName(from)} → ${colName(toCol)}.`);
-      save();
-      render();
+    // remove da coluna antiga
+    const fromIdx = state.columns[from].indexOf(cardId);
+    if (fromIdx >= 0) state.columns[from].splice(fromIdx, 1);
 
-      if (activeCardId === cardId){
-        cardWhere.textContent = `Na coluna: ${colName(toCol)}`;
+    // encontra onde soltar baseado na posição do mouse
+    const columnEl = document.querySelector(`[data-col="${toCol}"] .cards`);
+    const cards = [...columnEl.querySelectorAll(".card")];
+
+    let inserted = false;
+
+    for (const cardEl of cards){
+      const rect = cardEl.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2){
+        const beforeId = cardEl.dataset.id;
+        const idx = state.columns[toCol].indexOf(beforeId);
+        state.columns[toCol].splice(idx, 0, cardId);
+        inserted = true;
+        break;
       }
-    }catch{}
-  }
+    }
+
+    if (!inserted){
+      state.columns[toCol].push(cardId);
+    }
+
+    log(cardId, `Moveu o card para ${colName(toCol)}.`);
+    save();
+    render();
+
+  }catch{}
+}
 
   // Archive as dropzone
   if (archiveDrop){
