@@ -150,7 +150,7 @@ async function load(){
   }
 }
 
-  let state = seedWithExamples();
+  let state = await load();
 
 
   // ✅ sanitiza para nunca quebrar por id órfão
@@ -186,7 +186,7 @@ async function save(){
   }
 
   // fallback local
-  localStorage.setItem("kanban-state", JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
   // Helpers
