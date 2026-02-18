@@ -565,7 +565,7 @@ modalTitle.value = c.title || "";
 details.value = c.details || "";
 cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
-dueLabel.textContent = dueHuman(c.dueTs);
+dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
 dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
 
 renderTimeline();
@@ -673,7 +673,7 @@ duePill.addEventListener("click", ()=>{
       if (before !== ts) log(activeCardId, `Definiu o prazo do card para ${dueHuman(ts)} (${v}).`);
     }
 
-    dueLabel.textContent = dueHuman(c.dueTs);
+    dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
     save();
     render();
     renderTimeline();
