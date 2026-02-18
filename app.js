@@ -651,16 +651,6 @@ function closeCard(){
     }
   });
 
-  // Due
-
-    dueLabel.textContent = dueHuman(c.dueTs);
-    dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
-    save();
-    render();
-    renderTimeline();
-    dueQuick.value = "";
-  });
-
 duePill.addEventListener("click", ()=>{
   // abre o mini calendário (Edge/Chrome)
   if (dueDate.showPicker) dueDate.showPicker();
