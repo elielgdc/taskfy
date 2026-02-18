@@ -208,6 +208,7 @@ window.onerror = (msg, src, line, col, err) => {
     state.columns[colId].unshift(id);
     save();
     render();
+    return id;
   }
 
   function structuredCloneSafe(obj){
