@@ -305,6 +305,13 @@ window.onerror = (msg, src, line, col, err) => {
   const duePill = document.getElementById("duePill");
   const dueLabel = document.getElementById("dueLabel");
   const dueDate = document.getElementById("dueDate");
+  const duePop = document.getElementById("duePop");
+  const duePrev = document.getElementById("duePrev");
+  const dueNext = document.getElementById("dueNext");
+  const dueMonth = document.getElementById("dueMonth");
+  const dueGrid = document.getElementById("dueGrid");
+  const dueTodayBtn = document.getElementById("dueToday");
+  const dueClearBtn = document.getElementById("dueClear");
   const newNote = document.getElementById("newNote");
   const addNoteBtn = document.getElementById("addNoteBtn");
   const saveDetailsBtn = document.getElementById("saveDetailsBtn");
@@ -651,12 +658,130 @@ function closeCard(){
     }
   });
 
-duePill.addEventListener("click", ()=>{
-  // abre o mini calendário (Edge/Chrome)
-  if (dueDate.showPicker) dueDate.showPicker();
-  else dueDate.click();
+// ===== Mini calendário do Prazo =====
+let dueView = new Date(); // mês que o popup está mostrando
+
+function pad2(n){ return String(n).padStart(2,"0"); }
+function isoFromDate(dt){
+  return `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}-${pad2(dt.getDate())}`;
+}
+function startTsFromISO(v){
+  const [y,m,d] = v.split("-").map(Number);
+  return startOfDay(new Date(y, m-1, d));
+}
+function monthLabel(dt){
+  const names = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  return `${names[dt.getMonth()]} ${dt.getFullYear()}`;
+}
+
+function openDuePop(){
+  duePop.classList.add("open");
+  duePop.setAttribute("aria-hidden","false");
+  renderDuePop();
+}
+
+function closeDuePop(){
+  duePop.classList.remove("open");
+  duePop.setAttribute("aria-hidden","true");
+}
+
+function renderDuePop(){
+  dueMonth.textContent = monthLabel(dueView);
+  dueGrid.innerHTML = "";
+
+  const y = dueView.getFullYear();
+  const m = dueView.getMonth();
+
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay(); // 0=Dom
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+
+  // para marcar selecionado (se tiver)
+  const selectedISO = dueDate.value || "";
+
+  // 1) dias “vazios” do começo (mostra do mês anterior, bem apagado)
+  for (let i=0; i<startDow; i++){
+    const btn = document.createElement("button");
+    btn.className = "due-day muted";
+    btn.type = "button";
+    btn.textContent = "·";
+    btn.addEventListener("click", ()=>{});
+    dueGrid.appendChild(btn);
+  }
+
+  // 2) dias do mês
+  for (let d=1; d<=daysInMonth; d++){
+    const dt = new Date(y, m, d);
+    const iso = isoFromDate(dt);
+
+    const btn = document.createElement("button");
+    btn.className = "due-day" + (iso === selectedISO ? " sel" : "");
+    btn.type = "button";
+    btn.textContent = String(d);
+
+    btn.addEventListener("click", ()=>{
+      dueDate.value = iso;
+      dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+      closeDuePop();
+    });
+
+    dueGrid.appendChild(btn);
+  }
+}
+
+// abrir no clique do “Prazo”
+duePill.addEventListener("click", (e)=>{
+  e.stopPropagation();
+
+  // define o mês mostrado: se já existe data, abre naquele mês; senão, mês atual
+  if (dueDate.value){
+    const [yy,mm,dd] = dueDate.value.split("-").map(Number);
+    dueView = new Date(yy, mm-1, 1);
+  } else {
+    const now = new Date();
+    dueView = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  if (duePop.classList.contains("open")) closeDuePop();
+  else openDuePop();
 });
 
+// navegar meses
+duePrev.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  dueView = new Date(dueView.getFullYear(), dueView.getMonth()-1, 1);
+  renderDuePop();
+});
+dueNext.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  dueView = new Date(dueView.getFullYear(), dueView.getMonth()+1, 1);
+  renderDuePop();
+});
+
+// Hoje
+dueTodayBtn.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  const now = new Date();
+  const iso = isoFromDate(now);
+  dueDate.value = iso;
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+// Sem data
+dueClearBtn.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  dueDate.value = "";
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+// clicar fora fecha
+document.addEventListener("click", ()=>{
+  if (duePop.classList.contains("open")) closeDuePop();
+});
+duePop.addEventListener("click", (e)=> e.stopPropagation());
+  
   dueDate.addEventListener("change", ()=>{
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
