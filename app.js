@@ -251,9 +251,9 @@ let state = loadLocal();
     save();
   }
 
-  function createCard(title, colId){
+  function createCard(title, colId, dueTs = null){
     const id = uid();
-    const due = null; // default: sem prazo
+    const due = dueTs ?? null;
     state.cards[id] = {
       id,
       title,
@@ -264,6 +264,7 @@ let state = loadLocal();
       timeline: [
         { type:"log", ts: nowTs(), text:"Criou o card." },
         { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
+        ...(due ? [{ type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` }] : []),
       ]
     };
     state.columns[colId].unshift(id);
@@ -617,6 +618,7 @@ function initSupabase(){
 
   let activeCardId = null;
   let activeTab = "all";
+  let pendingNewCardDueTs = null;
 
   // Menus
   function closeAllMenus(){
@@ -844,6 +846,7 @@ if (!cardId){
   modalTitle.value = "";
   details.value = "";
   cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+  pendingNewCardDueTs = null;
 
   dueLabel.textContent = "Prazo";
   if (duePill) duePill.textContent = "📅 Sem prazo";
@@ -879,7 +882,7 @@ function closeCard(){
 
     if (title) {
       const colId = overlay.dataset.newcol;
-      createCard(title, colId);
+      createCard(title, colId, pendingNewCardDueTs);
     }
 
     delete overlay.dataset.newcol;
@@ -887,6 +890,7 @@ function closeCard(){
 
   overlay.classList.remove("open");
   activeCardId = null;
+  pendingNewCardDueTs = null;
   newNote.value = "";
   newTask.value = "";
 }
@@ -1108,17 +1112,26 @@ document.addEventListener("click", () => {
 duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
   dueDate?.addEventListener("change", ()=>{
+    const v = dueDate.value;
+    const nextDueTs = v ? startTsFromISO(v) : null;
+
+    // Durante criação (card ainda não existe): só guarda valor temporário
+    if (!activeCardId && overlay?.dataset?.newcol){
+      pendingNewCardDueTs = nextDueTs;
+      dueLabel.textContent = nextDueTs ? dueHuman(nextDueTs) : "Prazo";
+      if (duePill) duePill.textContent = nextDueTs ? `📅 ${dueHuman(nextDueTs)}` : "📅 Sem prazo";
+      return;
+    }
+
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
-    const v = dueDate.value;
     const before = c.dueTs;
 
     if (!v){
       c.dueTs = null;
       log(activeCardId, "Removeu o prazo do card.");
     } else {
-      const [y,m,d] = v.split("-").map(Number);
-      const ts = startOfDay(new Date(y, m-1, d));
+      const ts = nextDueTs;
       c.dueTs = ts;
       if (before !== ts) log(activeCardId, `Definiu o prazo do card para ${dueHuman(ts)} (${v}).`);
     }
