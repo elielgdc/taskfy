@@ -423,31 +423,7 @@ signupBtn?.addEventListener("click", async () => {
 
   let loggingIn = false;
 
-loginBtn?.addEventListener("click", async () => {
-  if (loggingIn) return;
-  loggingIn = true;
-  loginBtn.disabled = true;
 
-  const email = (loginEmail?.value || "").trim();
-  const pass  = (loginPass?.value || "").trim();
-  if (!email || !pass) {
-    alert("Preencha email e senha.");
-    loginBtn.disabled = false;
-    loggingIn = false;
-    return;
-  }
-
-  try {
-    await signInWithPassword(email, pass);
-    // NÃO precisa chamar render aqui: o onAuthStateChange já faz load() + render()
-  } catch (e) {
-    alert("Erro ao entrar: " + (e?.message || String(e)));
-  } finally {
-    loginBtn.disabled = false;
-    loggingIn = false;
-  }
-});
-  
   try {
     await signUpWithPassword(email, pass);
     alert("Conta criada! Agora clique em Entrar.");
@@ -464,6 +440,35 @@ loginBtn?.addEventListener("click", async () => {
   }
 });
 
+let loggingIn = false;
+
+loginBtn?.addEventListener("click", async () => {
+  if (loggingIn) return;
+  loggingIn = true;
+  loginBtn.disabled = true;
+
+  const email = (loginEmail?.value || "").trim();
+  const pass  = (loginPass?.value || "").trim();
+
+  if (!email || !pass) {
+    alert("Preencha email e senha.");
+    loginBtn.disabled = false;
+    loggingIn = false;
+    return;
+  }
+
+  try {
+    await signInWithPassword(email, pass);
+    // NÃO precisa fazer mais nada aqui.
+    // Seu onAuthStateChange já dá load() e render() quando loga.
+  } catch (e) {
+    alert("Erro ao entrar: " + (e?.message || String(e)));
+  } finally {
+    loginBtn.disabled = false;
+    loggingIn = false;
+  }
+});
+  
 // Enter no campo de senha = entrar
 loginPass?.addEventListener("keydown", (e) => {
   if (e.key === "Enter") loginBtn?.click();
