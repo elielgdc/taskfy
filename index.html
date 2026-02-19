@@ -63,6 +63,10 @@
     .dot{width:10px;height:10px;border-radius:999px;background:#7ac943}
     .user{font-weight:900}
     .spacer{flex:1}
+    .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:0;}
+    .brand{font-weight:1000;color:#e2e8f0;}
+    .muted{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;}
     .search{
       display:flex;align-items:center;gap:8px;
       background:rgba(148,163,184,.10);
@@ -830,7 +834,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div id="archiveDrop" style="display:none;"></div>
 </div>
 <!-- Modal overlay / detalhes do card -->
-<div class="overlay" id="overlay" style="display:none;">
+<div class="overlay" id="overlay">
 <div class="modal">
 <div class="modal-head">
 <input id="modalTitle" placeholder="Insira o título do card" type="text"/>
@@ -881,7 +885,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <!-- Timeline -->
 <div id="timeline" style="display:none;"></div>
 <!-- Arquivados -->
-<div class="overlay" id="archOverlay" style="display:none;">
+<div class="overlay" id="archOverlay">
 <div class="modal">
 <div class="modal-head">
 <div class="muted" style="font-weight:700;">Arquivados</div>
