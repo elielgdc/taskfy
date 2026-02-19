@@ -426,25 +426,30 @@ signupBtn?.addEventListener("click", async () => {
     return;
   }
   try {
-    const res = await signUpWithPassword(email, pass);
+if (!sb) throw new Error("Supabase não inicializado. Recarregue a página.");
 
-// Se o projeto NÃO exigir confirmação de email, já entra na hora.
-if (res?.session?.user || res?.user) {
-  // tenta pegar sessão atual e liberar painel
-  const { data: sessData } = await sb.auth.getSession();
-  sbUser = sessData?.session?.user || res?.user || null;
-  setAuthUI();
-  setGateUI();
-  if (sbUser){
-    state = await load();
-    sanitizeState();
-    render();
-    saveSoon?.();
-    return;
-  }
+const { data, error } = await sb.auth.signUp({
+  email,
+  password: pass
+});
+
+if (error) throw error;
+
+// Se exigir confirmação por email, não vem session
+if (!data?.session) {
+  alert("Conta criada! Agora confirme o e-mail para conseguir entrar.");
+  return;
 }
 
-alert("Conta criada! Agora clique em Entrar. (Se exigir confirmação, confirme no email e depois entre.)");
+// Se veio session, já está logado automaticamente
+sbUser = data.user;
+
+setGateUI();
+unlockApp?.();
+
+state = await load();
+render();
+
   } catch (e) {
     const msg = (e?.message || String(e));
     if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already")) {
