@@ -251,9 +251,9 @@ let state = loadLocal();
     save();
   }
 
-  function createCard(title, colId){
+  function createCard(title, colId, dueTs = null){
     const id = uid();
-    const due = null; // default: sem prazo
+    const due = dueTs ?? null;
     state.cards[id] = {
       id,
       title,
@@ -264,6 +264,7 @@ let state = loadLocal();
       timeline: [
         { type:"log", ts: nowTs(), text:"Criou o card." },
         { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
+        ...(due ? [{ type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` }] : []),
       ]
     };
     state.columns[colId].unshift(id);
@@ -593,7 +594,10 @@ function initSupabase(){
   const dueMonth = document.getElementById("dueMonth");
   const dueGrid = document.getElementById("dueGrid");
   const dueTodayBtn = document.getElementById("dueToday");
+  const dueTomorrowBtn = document.getElementById("dueTomorrow");
   const dueClearBtn = document.getElementById("dueClear");
+  const dueRemoveBtn = document.getElementById("dueRemove");
+  const dueApplyBtn = document.getElementById("dueApply");
   const newNote = document.getElementById("newNote");
   const addNoteBtn = document.getElementById("addNoteBtn");
   const saveDetailsBtn = document.getElementById("saveDetailsBtn");
@@ -613,6 +617,7 @@ function initSupabase(){
 
   let activeCardId = null;
   let activeTab = "all";
+  let pendingNewCardDueTs = null;
 
   // Menus
   function closeAllMenus(){
@@ -840,9 +845,11 @@ if (!cardId){
   modalTitle.value = "";
   details.value = "";
   cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+  pendingNewCardDueTs = null;
 
   dueLabel.textContent = "Prazo";
-  dueDate.value = "";
+  if (duePill) duePill.textContent = "📅 Sem prazo";
+  if (dueDate) dueDate.value = "";
 
   overlay.dataset.newcol = colId;
   overlay.classList.add("open");
@@ -856,7 +863,8 @@ details.value = c.details || "";
 cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
 dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
-dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
+if (dueDate) dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
 
 renderTimeline();
 renderTasks();
@@ -873,7 +881,7 @@ function closeCard(){
 
     if (title) {
       const colId = overlay.dataset.newcol;
-      createCard(title, colId);
+      createCard(title, colId, pendingNewCardDueTs);
     }
 
     delete overlay.dataset.newcol;
@@ -881,6 +889,7 @@ function closeCard(){
 
   overlay.classList.remove("open");
   activeCardId = null;
+  pendingNewCardDueTs = null;
   newNote.value = "";
   newTask.value = "";
 }
@@ -958,17 +967,20 @@ function monthLabel(dt){
 }
 
 function openDuePop(){
+  if (!duePop) return;
   duePop.classList.add("open");
   duePop.setAttribute("aria-hidden","false");
   renderDuePop();
 }
 
 function closeDuePop(){
+  if (!duePop) return;
   duePop.classList.remove("open");
   duePop.setAttribute("aria-hidden","true");
 }
 
 function renderDuePop(){
+  if (!dueMonth || !dueGrid || !dueDate) return;
   dueMonth.textContent = monthLabel(dueView);
   dueGrid.innerHTML = "";
 
@@ -981,13 +993,17 @@ function renderDuePop(){
 
   // para marcar selecionado (se tiver)
   const selectedISO = dueDate.value || "";
+  dueTodayBtn?.classList.toggle("active", selectedISO === isoFromDate(new Date()));
+  const tm = new Date(); tm.setDate(tm.getDate()+1);
+  dueTomorrowBtn?.classList.toggle("active", selectedISO === isoFromDate(tm));
+  dueClearBtn?.classList.toggle("active", !selectedISO);
 
   // 1) dias “vazios” do começo (mostra do mês anterior, bem apagado)
   for (let i=0; i<startDow; i++){
     const btn = document.createElement("button");
     btn.className = "due-day muted";
     btn.type = "button";
-    btn.textContent = "·";
+    btn.textContent = "";
     btn?.addEventListener("click", ()=>{});
     dueGrid.appendChild(btn);
   }
@@ -1016,6 +1032,8 @@ function renderDuePop(){
 duePill?.addEventListener("click", (e)=>{
   e.stopPropagation();
 
+  if (!dueDate || !duePop) return;
+
   // define o mês mostrado: se já existe data, abre naquele mês; senão, mês atual
   if (dueDate.value){
     const [yy,mm,dd] = dueDate.value.split("-").map(Number);
@@ -1032,11 +1050,13 @@ duePill?.addEventListener("click", (e)=>{
 // navegar meses
 duePrev?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueGrid || !dueMonth) return;
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()-1, 1);
   renderDuePop();
 });
 dueNext?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueGrid || !dueMonth) return;
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()+1, 1);
   renderDuePop();
 });
@@ -1044,6 +1064,7 @@ dueNext?.addEventListener("click", (e)=>{
 // Hoje
 dueTodayBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueDate) return;
   const now = new Date();
   const iso = isoFromDate(now);
   dueDate.value = iso;
@@ -1051,11 +1072,35 @@ dueTodayBtn?.addEventListener("click", (e)=>{
   closeDuePop();
 });
 
+dueTomorrowBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (!dueDate) return;
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+  dueDate.value = isoFromDate(d);
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
 // Sem data
 dueClearBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueDate) return;
   dueDate.value = "";
   dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+dueRemoveBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (!dueDate) return;
+  dueDate.value = "";
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+dueApplyBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
   closeDuePop();
 });
 
@@ -1066,26 +1111,37 @@ document.addEventListener("click", () => {
 duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
   dueDate?.addEventListener("change", ()=>{
+    const v = dueDate.value;
+    const nextDueTs = v ? startTsFromISO(v) : null;
+
+    // Durante criação (card ainda não existe): só guarda valor temporário
+    if (!activeCardId && overlay?.dataset?.newcol){
+      pendingNewCardDueTs = nextDueTs;
+      dueLabel.textContent = nextDueTs ? dueHuman(nextDueTs) : "Prazo";
+      if (duePill) duePill.textContent = nextDueTs ? `📅 ${dueHuman(nextDueTs)}` : "📅 Sem prazo";
+      return;
+    }
+
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
-    const v = dueDate.value;
     const before = c.dueTs;
 
     if (!v){
       c.dueTs = null;
       log(activeCardId, "Removeu o prazo do card.");
     } else {
-      const [y,m,d] = v.split("-").map(Number);
-      const ts = startOfDay(new Date(y, m-1, d));
+      const ts = nextDueTs;
       c.dueTs = ts;
       if (before !== ts) log(activeCardId, `Definiu o prazo do card para ${dueHuman(ts)} (${v}).`);
     }
 
     dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
+    if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
     save();
     render();
     renderTimeline();
   });
+
 
   // Checklist
   addTaskBtn?.addEventListener("click", ()=>{
