@@ -853,7 +853,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
 }
 .modal-main,
 .modal-side{padding:14px}
-.modal-main{border-right:1px solid rgba(148,163,184,.18)}
+.modal-main{border-right:1px solid rgba(148,163,184,.18);display:flex;flex-direction:column}
 
 .panel{
   border:1px solid rgba(148,163,184,.18);
@@ -908,12 +908,24 @@ body:not(.auth-locked) #loginGate{ display:none; }
   padding:10px 14px;
   border-radius:12px;
 }
+#duePill{padding:9px 12px}
+.modal-create-wrap{
+  margin-top:auto;
+  padding-top:10px;
+}
+.create-green{
+  background:linear-gradient(135deg,#2ecc71,#22c55e);
+  border-color:rgba(46,204,113,.45);
+  color:#06230f;
+  font-weight:1000;
+  padding:8px 12px !important;
+  font-size:12px;
+}
 #saveDetailsBtn,#addTaskBtn,#addNoteBtn{
   background:linear-gradient(135deg,#3b82f6,#2563eb);
   border-color:rgba(59,130,246,.4);
   color:#eaf2ff;
 }
-#createCardBtn{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:rgba(59,130,246,.4)}
 #deleteCardBtn{color:#fca5a5;border-color:rgba(239,68,68,.4)}
 
 .timeline-head{
@@ -942,6 +954,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
   #overlay .modal-body{grid-template-columns:1fr;overflow:auto}
   .modal-main{border-right:0;border-bottom:1px solid rgba(148,163,184,.18)}
 }
+.timeline-hint{margin-top:12px;font-size:13px;font-weight:900;line-height:1.35;color:#dbe6ff}
 
 
 </style>
@@ -970,15 +983,9 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div class="overlay" id="overlay">
 <div class="modal">
 <div class="modal-head">
-<input id="modalTitle" placeholder="[TODOS] atualizar planilhas de clientes" type="text"/>
+<input id="modalTitle" placeholder="Insira o título do seu card" type="text"/>
 <button class="mini" id="duePill" type="button">📅 Sem prazo</button>
-<select class="select" id="dueQuick" style="max-width:140px;">
-<option value="">Prazo rápido</option>
-<option value="today">Hoje</option>
-<option value="tomorrow">Amanhã</option>
-<option value="week">+7 dias</option>
-</select>
-<input id="dueDate" type="date"/>
+<input id="dueDate" type="date" style="display:none;"/>
 <button class="mini" id="closeModal" type="button">✕</button>
 </div>
 <div class="modal-body">
@@ -993,7 +1000,6 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
 <button class="mini" id="deleteCardBtn" type="button">Excluir</button>
 <button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
-<button class="mini" id="createCardBtn" type="button">Criar card</button>
 </div>
 </div>
 <div class="panel checklist">
@@ -1006,6 +1012,9 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <button class="mini" id="addTaskBtn" type="button">Adicionar</button>
 </div>
 <div id="taskList"></div>
+</div>
+<div class="modal-create-wrap">
+<button class="mini create-green" id="createCardBtn" type="button">Criar o card</button>
 </div>
 </div>
 <div class="modal-side">

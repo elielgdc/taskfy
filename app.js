@@ -1101,25 +1101,6 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
   });
 
 
-  dueQuick?.addEventListener("change", ()=>{
-    if (!dueDate) return;
-    if (!dueQuick.value) return;
-    const now = new Date();
-    if (dueQuick.value === "today") {
-      dueDate.value = isoFromDate(now);
-    } else if (dueQuick.value === "tomorrow") {
-      const d = new Date(now);
-      d.setDate(d.getDate()+1);
-      dueDate.value = isoFromDate(d);
-    } else if (dueQuick.value === "week") {
-      const d = new Date(now);
-      d.setDate(d.getDate()+7);
-      dueDate.value = isoFromDate(d);
-    }
-    dueDate.dispatchEvent(new Event("change", { bubbles:true }));
-    dueQuick.value = "";
-  });
-
   // Checklist
   addTaskBtn?.addEventListener("click", ()=>{
     if (!activeCardId) return;
