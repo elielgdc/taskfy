@@ -361,16 +361,16 @@ let sb = null;
 let sbUser = null;
 
 function setGateUI(){
-  const gate = document.getElementById("loginGate");
+  const gate = document.getElementById("authGate");
   const board = document.getElementById("board");
   const topbar = document.querySelector(".topbar");
-
   const logged = !!sbUser;
 
-  if (gate) gate.classList.toggle("open", !logged);
+  if (gate) gate.style.display = logged ? "none" : "block";
   if (board) board.style.display = logged ? "" : "none";
   if (topbar) topbar.style.display = logged ? "" : "none";
 }
+
     
 const authBtn = document.getElementById("authBtn");
 const authStatus = document.getElementById("authStatus");
@@ -382,6 +382,8 @@ const loginEmail = document.getElementById("loginEmail");
 const loginPass = document.getElementById("loginPass");
 const loginBtn = document.getElementById("loginBtn");
 const signupBtn = document.getElementById("signupBtn");
+const loginGate = document.getElementById("loginGate");
+const appRoot = document.getElementById("app");
 
 function lockApp(){
   document.body.classList.add("auth-locked");
@@ -459,49 +461,53 @@ alert("Conta criada! Agora clique em Entrar. (Se exigir confirmação, confirme 
 let loggingIn = false;
 
 loginBtn?.addEventListener("click", async () => {
+  if (loggingIn) return;
+  loggingIn = true;
+  loginBtn.disabled = true;
+
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
 
   if (!email || !pass) {
     alert("Preencha email e senha.");
+    loginBtn.disabled = false;
+    loggingIn = false;
     return;
   }
 
   try {
-    // 1️⃣ Faz login
+    if (!sb) throw new Error("Supabase não inicializado. Recarregue a página.");
+
     const { data, error } = await sb.auth.signInWithPassword({
       email,
       password: pass,
     });
 
-    if (error) {
-      alert("Erro ao entrar: " + error.message);
-      return;
-    }
+    if (error) throw error;
 
-    // 2️⃣ Garante que existe usuário
-    if (!data?.user) {
-      alert("Login não retornou usuário.");
-      return;
-    }
+    // garante user
+    if (!data?.user) throw new Error("Login não retornou usuário (verifique confirmação por e-mail).");
 
-    // 3️⃣ Define usuário global
+    // seta user global (se seu código usa sbUser)
     sbUser = data.user;
 
-    // 4️⃣ Esconde tela login
-    loginGate?.classList.add("hidden");
-    appRoot?.classList.remove("hidden");
+    // ✅ libera UI imediatamente
+    setGateUI();
+    unlockApp?.();
 
-    // 5️⃣ Carrega dados
+
+    // ✅ carrega e renderiza
     state = await load();
-
-    // 6️⃣ Renderiza
     render();
 
   } catch (e) {
-    alert("Erro inesperado: " + e.message);
+    alert("Erro ao entrar: " + (e?.message || String(e)));
+  } finally {
+    loginBtn.disabled = false;
+    loggingIn = false;
   }
 });
+
 
 
   
