@@ -388,20 +388,24 @@ function setAuthUI(){
   }
 }
 
-// Gate determinístico (não depende de CSS “open” pra funcionar)
 function setGateUI(){
+  const gate = document.getElementById("loginGate");
   const board = document.getElementById("board");
   const topbar = document.querySelector(".topbar");
+  const archiveDrop = document.getElementById("archiveDrop");
+
   const logged = !!sbUser;
 
-  // mostra/esconde o gate que existir
-  if (authGate) authGate.style.display = logged ? "none" : "flex";
-  if (loginGate) loginGate.style.display = logged ? "none" : "block";
+  // 1) a regra-mãe do seu CSS
+  document.body.classList.toggle("auth-locked", !logged);
 
+  // 2) mostra/esconde gate (não depende de .open nem de CSS)
+  if (gate) gate.style.display = logged ? "none" : "flex";
+
+  // 3) libera UI do app
   if (board) board.style.display = logged ? "" : "none";
   if (topbar) topbar.style.display = logged ? "" : "none";
-
-  document.body.classList.toggle("auth-locked", !logged);
+  if (archiveDrop) archiveDrop.style.display = logged ? "" : "none";
 }
 
 function ensureSb(){
