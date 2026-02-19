@@ -587,6 +587,7 @@ function initSupabase(){
   const duePill = document.getElementById("duePill");
   const dueLabel = document.getElementById("dueLabel");
   const dueDate = document.getElementById("dueDate");
+  const dueQuick = document.getElementById("dueQuick");
   const duePop = document.getElementById("duePop");
   const duePrev = document.getElementById("duePrev");
   const dueNext = document.getElementById("dueNext");
@@ -842,6 +843,7 @@ if (!cardId){
   cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
   dueLabel.textContent = "Prazo";
+  if (duePill) duePill.textContent = "📅 Sem prazo";
   dueDate.value = "";
 
   overlay.dataset.newcol = colId;
@@ -856,6 +858,7 @@ details.value = c.details || "";
 cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
 dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
+if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
 dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
 
 renderTimeline();
@@ -1082,9 +1085,29 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
     }
 
     dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
+    if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
     save();
     render();
     renderTimeline();
+  });
+
+
+  dueQuick?.addEventListener("change", ()=>{
+    if (!dueQuick.value) return;
+    const now = new Date();
+    if (dueQuick.value === "today") {
+      dueDate.value = isoFromDate(now);
+    } else if (dueQuick.value === "tomorrow") {
+      const d = new Date(now);
+      d.setDate(d.getDate()+1);
+      dueDate.value = isoFromDate(d);
+    } else if (dueQuick.value === "week") {
+      const d = new Date(now);
+      d.setDate(d.getDate()+7);
+      dueDate.value = isoFromDate(d);
+    }
+    dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+    dueQuick.value = "";
   });
 
   // Checklist

@@ -811,187 +811,139 @@ body:not(.auth-locked) #loginGate{ display:none; }
   padding: 0;
 }
 
-/* ===== FIX MODAL LAYOUT (corrige desalinhamento) ===== */
-
-/* seu HTML usa .modal-head (não .modal-top) */
-.modal-head{
+/* ===== Card modal layout (restaura visual interno como no print) ===== */
+#overlay{ align-items:flex-start; }
+#overlay .modal{
+  width:min(1120px,96vw);
+  max-height:94vh;
+  border:1px solid rgba(148,163,184,.20);
+  border-radius:16px;
+  background:linear-gradient(180deg,#071129,#06102a 35%,#071238);
+  box-shadow:0 28px 60px rgba(1,8,25,.65);
+}
+#overlay .modal-head{
   display:flex;
   align-items:center;
   gap:10px;
   padding:12px 14px;
   border-bottom:1px solid rgba(148,163,184,.18);
-  background:rgba(11,19,38,.85);
+  background:rgba(8,18,42,.92);
 }
-
-/* o input de título precisa ter estilo (no HTML ele não tem class) */
 #modalTitle{
-  flex:1;
-  min-width: 240px;
-  background: transparent;
-  border: 0;
-  outline: none;
-  color: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 10px;
-}
-#modalTitle::placeholder{ opacity:.6; }
-#modalTitle:focus{ background: rgba(255,255,255,.05); }
-
-/* seu CSS atual deixa .modal-body em GRID, mas seu HTML não tem .left/.right */
-.modal-body{
-  display:flex !important;
-  flex-direction:column;
-  gap:12px;
-  padding:14px;
-  overflow:auto;
-}
-
-/* organiza os “rows” e evita botão quebrado/colado */
-.modal-body .row{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-.modal-body .row.actions{
-  justify-content:flex-end;
-}
-
-/* deixa checklist/notas com cara de seção */
-.checklist, .notes, #details{
-  border:1px solid rgba(148,163,184,.18);
-  border-radius:14px;
-  background:rgba(15,23,42,.92);
-  padding:12px;
-}
-
-/* textarea do bloco de notas ocupa melhor */
-#newNote{
-  min-height:120px;
-}
-
-/* evita que botões fiquem espremidos */
-.modal-body .mini{
-  white-space:nowrap;
-}
-
-/* ===== MODAL FIX (layout estável) ===== */
-
-/* seu HTML usa .modal-head (o CSS antigo era .modal-top) */
-.modal-head{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:12px 14px;
-  border-bottom:1px solid rgba(148,163,184,.18);
-  background:rgba(11,19,38,.85);
-}
-
-/* evita estouro/horizontal scroll */
-.modal{
-  overflow:hidden;               /* era visible */
-}
-
-.modal-body{
-  display:flex !important;        /* desliga o grid antigo */
-  flex-direction:column;
-  gap:12px;
-  padding:14px;
-  overflow:auto;
-  overflow-x:hidden;              /* mata o scroll horizontal */
-}
-
-.modal-body > *{ min-width:0; }   /* impede filhos de estourarem */
-
-#modalTitle{
-  flex:1;
-  min-width: 240px;
-  background: transparent;
-  border: 0;
-  outline: none;
-  color: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 10px;
-}
-#modalTitle:focus{ background: rgba(255,255,255,.05); }
-
-/* rows mais previsíveis */
-.modal-body .row{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-/* seções com borda */
-.checklist, .notes, #details{
-  border:1px solid rgba(148,163,184,.18);
-  border-radius:14px;
-  background:rgba(15,23,42,.92);
-  padding:12px;
-}
-
-/* inputs do modal ocupam largura */
-#newTask{
   flex:1;
   min-width:220px;
+  border:0;
+  outline:none;
+  border-radius:10px;
+  padding:8px 10px;
+  font-size:30px;
+  font-weight:900;
+  color:#f8fbff;
+  background:transparent;
 }
+#modalTitle::placeholder{opacity:.55}
+#modalTitle:focus{background:rgba(255,255,255,.06)}
 
-#newNote{
-  flex:1;
-  min-width:260px;
-  min-height:130px;
+#overlay .modal-body{
+  display:grid !important;
+  grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);
+  gap:0;
+  padding:0;
+  overflow:hidden;
 }
+.modal-main,
+.modal-side{padding:14px}
+.modal-main{border-right:1px solid rgba(148,163,184,.18)}
 
-/* botão "Salvar nota" não ficar colado no textarea */
-.notes .row{
-  align-items:flex-start;
+.panel{
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:14px;
+  background:rgba(11,22,49,.92);
+  padding:12px;
 }
-.notes #addNoteBtn{
-  margin-top:2px;
-  white-space:nowrap;
-}
-
-/* ações do rodapé: sempre visíveis e organizadas */
-.row.actions{
-  position: sticky;
-  bottom: 0;
-  padding: 12px 0 0;
-  background: linear-gradient(to top, rgba(15,23,42,.98), rgba(15,23,42,0));
-  justify-content:flex-end;
+.panel + .panel{margin-top:12px}
+.panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
   gap:8px;
+  margin-bottom:10px;
+  font-weight:1000;
 }
-.row.actions .mini{
-  width:auto;                     /* para de esmagar texto */
-  height:auto;
-  padding:10px 12px;
+#cardWhere{font-size:13px;color:#c5d3eb}
+#details{
+  width:100%;
+  min-height:140px;
+  border:1px solid rgba(148,163,184,.2);
   border-radius:12px;
+  background:rgba(18,32,64,.85);
+  padding:12px;
+  color:#edf3ff;
+  resize:vertical;
 }
 
-.modal-body *{
-  max-width:100%;
-  box-sizing:border-box;
+.field-row{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+#newTask, #newNote{
+  flex:1;
+  min-width:0;
+  border:1px solid rgba(148,163,184,.2);
+  border-radius:12px;
+  background:rgba(18,32,64,.85);
+  color:#edf3ff;
+  padding:10px 12px;
 }
+#newNote{min-height:38px;max-height:38px;resize:none}
+#taskList{margin-top:10px}
 
-.row.actions{
+.modal-actions{
+  margin-top:12px;
   display:flex;
   justify-content:flex-end;
   gap:8px;
   flex-wrap:wrap;
 }
-
-.row.actions .mini{
+#overlay .mini{
   width:auto;
   height:auto;
-  padding:8px 12px;
+  padding:10px 14px;
+  border-radius:12px;
 }
-    
-    
+#saveDetailsBtn,#addTaskBtn,#addNoteBtn{
+  background:linear-gradient(135deg,#3b82f6,#2563eb);
+  border-color:rgba(59,130,246,.4);
+  color:#eaf2ff;
+}
+#createCardBtn{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:rgba(59,130,246,.4)}
+#deleteCardBtn{color:#fca5a5;border-color:rgba(239,68,68,.4)}
+
+.timeline-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:1000;
+  margin-bottom:10px;
+}
+.tabs{margin-bottom:10px}
+#timeline{
+  display:flex !important;
+  flex-direction:column;
+  gap:10px;
+  max-height:290px;
+  overflow:auto;
+  padding-right:4px;
+}
+.timeline-hint{margin-top:12px;font-size:13px;font-weight:900;line-height:1.35;color:#dbe6ff}
+
+.due-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+#duePill{padding:9px 12px}
+
+@media (max-width: 980px){
+  #overlay .modal{width:min(96vw,960px)}
+  #overlay .modal-body{grid-template-columns:1fr;overflow:auto}
+  .modal-main{border-right:0;border-bottom:1px solid rgba(148,163,184,.18)}
+}
+
+
 </style>
 </meta></head>
 <body>
@@ -1015,61 +967,65 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div id="archiveDrop" style="display:none;"></div>
 </div>
 <!-- Modal overlay / detalhes do card -->
-<div class="modal-body">
-  <div class="left">
-    <div class="muted" id="cardWhere"></div>
-
-    <div class="row">
-      <button class="mini" id="duePill" type="button">Prazo</button>
-      <span class="muted" id="dueLabel">Prazo:</span>
-    </div>
-
-    <div class="due-pop" id="duePop">
-      <div class="due-pop-head">
-        <button class="mini" id="duePrev" type="button">◀</button>
-        <div class="muted" id="dueMonth"></div>
-        <button class="mini" id="dueNext" type="button">▶</button>
-      </div>
-      <div class="due-pop-actions">
-        <button class="mini" id="dueToday" type="button">Hoje</button>
-        <button class="mini" id="dueClear" type="button">Limpar</button>
-      </div>
-      <input id="dueDate" type="date"/>
-      <div id="dueGrid"></div>
-    </div>
-
-    <div id="details"></div>
-  </div>
-
-  <div class="right">
-    <div class="checklist">
-      <div class="row">
-        <input id="newTask" placeholder="Nova tarefa" type="text"/>
-        <button class="mini" id="addTaskBtn" type="button">Adicionar</button>
-      </div>
-      <div id="taskList"></div>
-    </div>
-
-    <div class="notes">
-      <div class="row">
-        <textarea id="newNote" placeholder="Nova nota"></textarea>
-        <button class="mini" id="addNoteBtn" type="button">Salvar nota</button>
-      </div>
-    </div>
-
-    <div class="row actions">
-      <button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
-      <button class="mini" id="createCardBtn" type="button">Criar card</button>
-      <button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
-      <button class="mini" id="deleteCardBtn" type="button">Excluir</button>
-    </div>
-  </div>
+<div class="overlay" id="overlay">
+<div class="modal">
+<div class="modal-head">
+<input id="modalTitle" placeholder="[TODOS] atualizar planilhas de clientes" type="text"/>
+<button class="mini" id="duePill" type="button">📅 Sem prazo</button>
+<select class="select" id="dueQuick" style="max-width:140px;">
+<option value="">Prazo rápido</option>
+<option value="today">Hoje</option>
+<option value="tomorrow">Amanhã</option>
+<option value="week">+7 dias</option>
+</select>
+<input id="dueDate" type="date"/>
+<button class="mini" id="closeModal" type="button">✕</button>
 </div>
 <div class="modal-body">
-<div class="muted" id="cardWhere"></div>
-<div class="row">
-<button class="mini" id="duePill" type="button">Prazo</button>
-<span class="muted" id="dueLabel">Prazo:</span>
+<div class="modal-main">
+<div class="panel">
+<div class="panel-head">
+<span>Detalhes do card</span>
+<span class="muted" id="cardWhere">Na coluna: </span>
+</div>
+<textarea class="textarea" id="details" placeholder="Escrever detalhes do card..."></textarea>
+<div class="modal-actions">
+<button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
+<button class="mini" id="deleteCardBtn" type="button">Excluir</button>
+<button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
+<button class="mini" id="createCardBtn" type="button">Criar card</button>
+</div>
+</div>
+<div class="panel checklist">
+<div class="panel-head">
+<span>Checklist</span>
+<span class="muted">opcional</span>
+</div>
+<div class="field-row">
+<input id="newTask" placeholder="Adicionar tarefa do card..." type="text"/>
+<button class="mini" id="addTaskBtn" type="button">Adicionar</button>
+</div>
+<div id="taskList"></div>
+</div>
+</div>
+<div class="modal-side">
+<div class="panel timeline-panel">
+<div class="timeline-head">
+<span>Timeline</span>
+<span class="muted">anotações + registros</span>
+</div>
+<div class="tabs">
+<div class="tab active" data-tab="all">TODOS</div>
+<div class="tab" data-tab="notes">ANOTAÇÕES</div>
+<div class="tab" data-tab="logs">REGISTROS</div>
+</div>
+<div class="field-row" style="margin-bottom:10px;">
+<textarea id="newNote" placeholder="Escreva uma anotação neste card..."></textarea>
+<button class="mini" id="addNoteBtn" type="button">Enviar</button>
+</div>
+<div id="timeline"></div>
+</div>
+<div class="timeline-hint">Arraste cards entre colunas. Arraste para “Arquivado” para esconder do quadro.</div>
 </div>
 <div class="due-pop" id="duePop">
 <div class="due-pop-head">
@@ -1081,34 +1037,12 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <button class="mini" id="dueToday" type="button">Hoje</button>
 <button class="mini" id="dueClear" type="button">Limpar</button>
 </div>
-<input id="dueDate" type="date"/>
 <div id="dueGrid"></div>
 </div>
-<textarea id="details" class="textarea" placeholder="Detalhes do card..."></textarea>
-<div class="checklist">
-<div class="row">
-<input id="newTask" placeholder="Nova tarefa" type="text"/>
-<button class="mini" id="addTaskBtn" type="button">Adicionar</button>
-</div>
-<div id="taskList"></div>
-</div>
-<div class="notes">
-<div class="row">
-<textarea id="newNote" placeholder="Nova nota"></textarea>
-<button class="mini" id="addNoteBtn" type="button">Salvar nota</button>
-</div>
-</div>
-<div class="row actions">
-<button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
-<button class="mini" id="createCardBtn" type="button">Criar card</button>
-<button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
-<button class="mini" id="deleteCardBtn" type="button">Excluir</button>
+<span class="muted" id="dueLabel" style="display:none;">Prazo:</span>
 </div>
 </div>
 </div>
-</div>
-<!-- Timeline -->
-<div id="timeline" style="display:none;"></div>
 <!-- Arquivados -->
 <div class="overlay" id="archOverlay">
 <div class="modal">
