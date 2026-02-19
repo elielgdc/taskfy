@@ -459,46 +459,50 @@ alert("Conta criada! Agora clique em Entrar. (Se exigir confirmação, confirme 
 let loggingIn = false;
 
 loginBtn?.addEventListener("click", async () => {
-  if (loggingIn) return;
-  loggingIn = true;
-  loginBtn.disabled = true;
-
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
 
   if (!email || !pass) {
     alert("Preencha email e senha.");
-    loginBtn.disabled = false;
-    loggingIn = false;
     return;
   }
 
   try {
-    await signInWithPassword(email, pass);
+    // 1️⃣ Faz login
+    const { data, error } = await sb.auth.signInWithPassword({
+      email,
+      password: pass,
+    });
 
-    // ✅ garante atualização imediata do painel (sem depender só do onAuthStateChange)
-    const { data: sessData, error: sessErr } = await sb.auth.getSession();
-    if (sessErr) throw sessErr;
-
-    sbUser = sessData?.session?.user || null;
-    setAuthUI();
-    setGateUI();
-
-    if (!sbUser) {
-      throw new Error("Login não retornou usuário. Verifique se a confirmação de email está exigida no Supabase Auth.");
+    if (error) {
+      alert("Erro ao entrar: " + error.message);
+      return;
     }
 
+    // 2️⃣ Garante que existe usuário
+    if (!data?.user) {
+      alert("Login não retornou usuário.");
+      return;
+    }
+
+    // 3️⃣ Define usuário global
+    sbUser = data.user;
+
+    // 4️⃣ Esconde tela login
+    loginGate?.classList.add("hidden");
+    appRoot?.classList.remove("hidden");
+
+    // 5️⃣ Carrega dados
     state = await load();
-    sanitizeState();
+
+    // 6️⃣ Renderiza
     render();
-    saveSoon?.();
+
   } catch (e) {
-    alert("Erro ao entrar: " + (e?.message || String(e)));
-  } finally {
-    loginBtn.disabled = false;
-    loggingIn = false;
+    alert("Erro inesperado: " + e.message);
   }
 });
+
 
   
 // Enter no campo de senha = entrar
