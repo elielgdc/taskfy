@@ -393,16 +393,19 @@ function unlockApp(){
 
 
 async function signInWithPassword(email, password){
-  if (!sb) return;
-  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (!sb) throw new Error("Supabase não inicializado (sb = null). Recarregue a página.");
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) throw error;
+  return data;
 }
 
 async function signUpWithPassword(email, password){
-  if (!sb) return;
-  const { error } = await sb.auth.signUp({ email, password });
+  if (!sb) throw new Error("Supabase não inicializado (sb = null). Recarregue a página.");
+  const { data, error } = await sb.auth.signUp({ email, password });
   if (error) throw error;
+  return data;
 }
+
 
 
 let signingUp = false;
@@ -420,13 +423,26 @@ signupBtn?.addEventListener("click", async () => {
     signingUp = false;
     return;
   }
-
-  let loggingIn = false;
-
-
   try {
-    await signUpWithPassword(email, pass);
-    alert("Conta criada! Agora clique em Entrar.");
+    const res = await signUpWithPassword(email, pass);
+
+// Se o projeto NÃO exigir confirmação de email, já entra na hora.
+if (res?.session?.user || res?.user) {
+  // tenta pegar sessão atual e liberar painel
+  const { data: sessData } = await sb.auth.getSession();
+  sbUser = sessData?.session?.user || res?.user || null;
+  setAuthUI();
+  setGateUI();
+  if (sbUser){
+    state = await load();
+    sanitizeState();
+    render();
+    saveSoon?.();
+    return;
+  }
+}
+
+alert("Conta criada! Agora clique em Entrar. (Se exigir confirmação, confirme no email e depois entre.)");
   } catch (e) {
     const msg = (e?.message || String(e));
     if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already")) {
@@ -459,8 +475,23 @@ loginBtn?.addEventListener("click", async () => {
 
   try {
     await signInWithPassword(email, pass);
-    // NÃO precisa fazer mais nada aqui.
-    // Seu onAuthStateChange já dá load() e render() quando loga.
+
+    // ✅ garante atualização imediata do painel (sem depender só do onAuthStateChange)
+    const { data: sessData, error: sessErr } = await sb.auth.getSession();
+    if (sessErr) throw sessErr;
+
+    sbUser = sessData?.session?.user || null;
+    setAuthUI();
+    setGateUI();
+
+    if (!sbUser) {
+      throw new Error("Login não retornou usuário. Verifique se a confirmação de email está exigida no Supabase Auth.");
+    }
+
+    state = await load();
+    sanitizeState();
+    render();
+    saveSoon?.();
   } catch (e) {
     alert("Erro ao entrar: " + (e?.message || String(e)));
   } finally {
@@ -468,6 +499,7 @@ loginBtn?.addEventListener("click", async () => {
     loggingIn = false;
   }
 });
+
   
 // Enter no campo de senha = entrar
 loginPass?.addEventListener("keydown", (e) => {
