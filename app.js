@@ -494,44 +494,26 @@ signupBtn?.addEventListener("click", async () => {
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
 
-try {
-  await signUpWithPassword(email, pass);
+  try {
+    if (!email || !pass) throw new Error("Preencha email e senha.");
 
-  // tenta logar automaticamente
-  await signInWithPassword(email, pass);
+    await signUpWithPassword(email, pass);
 
-  const { data } = await sb.auth.getSession();
-  sbUser = data?.session?.user || null;
-
-  setAuthUI();
-  setGateUI();
-
-  if (!sbUser){
-    alert("Conta criada, mas seu projeto exige confirmação de email. Confirme no email e depois clique em Entrar.");
-    return;
-  }
-
-  state = await load();
-  sanitizeState?.();
-  render();
-  saveSoon?.();
-
-} catch (e) {
-  alert("Não consegui criar/logar: " + (e?.message || String(e)));
-} finally {
-  signupBtn.disabled = false;
-  signingUp = false;
-}
-    // Se veio session, já está logado
+    // tenta logar automaticamente
+    await signInWithPassword(email, pass);
     await doPostLogin();
-  }catch(e){
+
+    if (!sbUser) {
+      alert("Conta criada, mas seu projeto exige confirmação de email. Confirme no email e depois clique em Entrar.");
+    }
+  } catch (e) {
     const msg = (e?.message || String(e));
-    if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate")){
+    if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate")) {
       alert("Esse e-mail já tem conta. Clique em Entrar.");
     } else {
       alert("Erro ao criar conta: " + msg);
     }
-  }finally{
+  } finally {
     signupBtn.disabled = false;
     signingUp = false;
   }
@@ -1280,16 +1262,6 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
 
 document.getElementById("createCardBtn")?.addEventListener("click", closeCard);
 
-
-  // Botão Entrar/Sair
-authBtn?.addEventListener("click", ()=>{
-  if (sbUser) {
-    signOut();
-  } else {
-    setGateUI();
-    setTimeout(()=> loginEmail?.focus?.(), 0);
-  }
-});
 
 // Start
   lockApp();
