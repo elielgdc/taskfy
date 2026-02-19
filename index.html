@@ -876,6 +876,101 @@ body:not(.auth-locked) #loginGate{ display:none; }
 .modal-body .mini{
   white-space:nowrap;
 }
+
+/* ===== MODAL FIX (layout estável) ===== */
+
+/* seu HTML usa .modal-head (o CSS antigo era .modal-top) */
+.modal-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  background:rgba(11,19,38,.85);
+}
+
+/* evita estouro/horizontal scroll */
+.modal{
+  overflow:hidden;               /* era visible */
+}
+
+.modal-body{
+  display:flex !important;        /* desliga o grid antigo */
+  flex-direction:column;
+  gap:12px;
+  padding:14px;
+  overflow:auto;
+  overflow-x:hidden;              /* mata o scroll horizontal */
+}
+
+.modal-body > *{ min-width:0; }   /* impede filhos de estourarem */
+
+#modalTitle{
+  flex:1;
+  min-width: 240px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+#modalTitle:focus{ background: rgba(255,255,255,.05); }
+
+/* rows mais previsíveis */
+.modal-body .row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+/* seções com borda */
+.checklist, .notes, #details{
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:14px;
+  background:rgba(15,23,42,.92);
+  padding:12px;
+}
+
+/* inputs do modal ocupam largura */
+#newTask{
+  flex:1;
+  min-width:220px;
+}
+
+#newNote{
+  flex:1;
+  min-width:260px;
+  min-height:130px;
+}
+
+/* botão "Salvar nota" não ficar colado no textarea */
+.notes .row{
+  align-items:flex-start;
+}
+.notes #addNoteBtn{
+  margin-top:2px;
+  white-space:nowrap;
+}
+
+/* ações do rodapé: sempre visíveis e organizadas */
+.row.actions{
+  position: sticky;
+  bottom: 0;
+  padding: 12px 0 0;
+  background: linear-gradient(to top, rgba(15,23,42,.98), rgba(15,23,42,0));
+  justify-content:flex-end;
+  gap:8px;
+}
+.row.actions .mini{
+  width:auto;                     /* para de esmagar texto */
+  height:auto;
+  padding:10px 12px;
+  border-radius:12px;
+}
     
     
 </style>
