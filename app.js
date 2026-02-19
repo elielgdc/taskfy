@@ -844,7 +844,7 @@ if (!cardId){
 
   dueLabel.textContent = "Prazo";
   if (duePill) duePill.textContent = "📅 Sem prazo";
-  dueDate.value = "";
+  if (dueDate) dueDate.value = "";
 
   overlay.dataset.newcol = colId;
   overlay.classList.add("open");
@@ -859,7 +859,7 @@ cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
 dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
 if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
-dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+if (dueDate) dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
 
 renderTimeline();
 renderTasks();
@@ -961,17 +961,20 @@ function monthLabel(dt){
 }
 
 function openDuePop(){
+  if (!duePop) return;
   duePop.classList.add("open");
   duePop.setAttribute("aria-hidden","false");
   renderDuePop();
 }
 
 function closeDuePop(){
+  if (!duePop) return;
   duePop.classList.remove("open");
   duePop.setAttribute("aria-hidden","true");
 }
 
 function renderDuePop(){
+  if (!dueMonth || !dueGrid || !dueDate) return;
   dueMonth.textContent = monthLabel(dueView);
   dueGrid.innerHTML = "";
 
@@ -1019,6 +1022,8 @@ function renderDuePop(){
 duePill?.addEventListener("click", (e)=>{
   e.stopPropagation();
 
+  if (!dueDate || !duePop) return;
+
   // define o mês mostrado: se já existe data, abre naquele mês; senão, mês atual
   if (dueDate.value){
     const [yy,mm,dd] = dueDate.value.split("-").map(Number);
@@ -1035,11 +1040,13 @@ duePill?.addEventListener("click", (e)=>{
 // navegar meses
 duePrev?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueGrid || !dueMonth) return;
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()-1, 1);
   renderDuePop();
 });
 dueNext?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueGrid || !dueMonth) return;
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()+1, 1);
   renderDuePop();
 });
@@ -1047,6 +1054,7 @@ dueNext?.addEventListener("click", (e)=>{
 // Hoje
 dueTodayBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueDate) return;
   const now = new Date();
   const iso = isoFromDate(now);
   dueDate.value = iso;
@@ -1057,6 +1065,7 @@ dueTodayBtn?.addEventListener("click", (e)=>{
 // Sem data
 dueClearBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueDate) return;
   dueDate.value = "";
   dueDate.dispatchEvent(new Event("change", { bubbles:true }));
   closeDuePop();
@@ -1093,6 +1102,7 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
 
 
   dueQuick?.addEventListener("change", ()=>{
+    if (!dueDate) return;
     if (!dueQuick.value) return;
     const now = new Date();
     if (dueQuick.value === "today") {

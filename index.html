@@ -970,7 +970,15 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div class="overlay" id="overlay">
 <div class="modal">
 <div class="modal-head">
-<input id="modalTitle" placeholder="Título do card" type="text"/>
+<input id="modalTitle" placeholder="[TODOS] atualizar planilhas de clientes" type="text"/>
+<button class="mini" id="duePill" type="button">📅 Sem prazo</button>
+<select class="select" id="dueQuick" style="max-width:140px;">
+<option value="">Prazo rápido</option>
+<option value="today">Hoje</option>
+<option value="tomorrow">Amanhã</option>
+<option value="week">+7 dias</option>
+</select>
+<input id="dueDate" type="date"/>
 <button class="mini" id="closeModal" type="button">✕</button>
 </div>
 <div class="modal-body">
