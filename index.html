@@ -1015,55 +1015,11 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div id="archiveDrop" style="display:none;"></div>
 </div>
 <!-- Modal overlay / detalhes do card -->
-<div class="modal-body">
-  <div class="left">
-    <div class="muted" id="cardWhere"></div>
-
-    <div class="row">
-      <button class="mini" id="duePill" type="button">Prazo</button>
-      <span class="muted" id="dueLabel">Prazo:</span>
-    </div>
-
-    <div class="due-pop" id="duePop">
-      <div class="due-pop-head">
-        <button class="mini" id="duePrev" type="button">◀</button>
-        <div class="muted" id="dueMonth"></div>
-        <button class="mini" id="dueNext" type="button">▶</button>
-      </div>
-      <div class="due-pop-actions">
-        <button class="mini" id="dueToday" type="button">Hoje</button>
-        <button class="mini" id="dueClear" type="button">Limpar</button>
-      </div>
-      <input id="dueDate" type="date"/>
-      <div id="dueGrid"></div>
-    </div>
-
-    <div id="details"></div>
-  </div>
-
-  <div class="right">
-    <div class="checklist">
-      <div class="row">
-        <input id="newTask" placeholder="Nova tarefa" type="text"/>
-        <button class="mini" id="addTaskBtn" type="button">Adicionar</button>
-      </div>
-      <div id="taskList"></div>
-    </div>
-
-    <div class="notes">
-      <div class="row">
-        <textarea id="newNote" placeholder="Nova nota"></textarea>
-        <button class="mini" id="addNoteBtn" type="button">Salvar nota</button>
-      </div>
-    </div>
-
-    <div class="row actions">
-      <button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
-      <button class="mini" id="createCardBtn" type="button">Criar card</button>
-      <button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
-      <button class="mini" id="deleteCardBtn" type="button">Excluir</button>
-    </div>
-  </div>
+<div class="overlay" id="overlay">
+<div class="modal">
+<div class="modal-head">
+<input id="modalTitle" placeholder="Título do card" type="text"/>
+<button class="mini" id="closeModal" type="button">✕</button>
 </div>
 <div class="modal-body">
 <div class="muted" id="cardWhere"></div>
@@ -1084,7 +1040,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <input id="dueDate" type="date"/>
 <div id="dueGrid"></div>
 </div>
-<textarea id="details" class="textarea" placeholder="Detalhes do card..."></textarea>
+<textarea class="textarea" id="details" placeholder="Detalhes do card..."></textarea>
 <div class="checklist">
 <div class="row">
 <input id="newTask" placeholder="Nova tarefa" type="text"/>
