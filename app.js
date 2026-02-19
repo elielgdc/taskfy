@@ -493,17 +493,34 @@ signupBtn?.addEventListener("click", async () => {
   const email = (loginEmail?.value || "").trim();
   const pass  = (loginPass?.value || "").trim();
 
-  try{
-    if (!email || !pass) throw new Error("Preencha email e senha.");
+try {
+  await signUpWithPassword(email, pass);
 
-    const res = await signUpWithPassword(email, pass);
+  // tenta logar automaticamente
+  await signInWithPassword(email, pass);
 
-    // Se o projeto exigir confirmação de e-mail, session vem null.
-    if (!res?.session){
-      alert("Conta criada! Agora CONFIRME o e-mail para conseguir entrar.");
-      return;
-    }
+  const { data } = await sb.auth.getSession();
+  sbUser = data?.session?.user || null;
 
+  setAuthUI();
+  setGateUI();
+
+  if (!sbUser){
+    alert("Conta criada, mas seu projeto exige confirmação de email. Confirme no email e depois clique em Entrar.");
+    return;
+  }
+
+  state = await load();
+  sanitizeState?.();
+  render();
+  saveSoon?.();
+
+} catch (e) {
+  alert("Não consegui criar/logar: " + (e?.message || String(e)));
+} finally {
+  signupBtn.disabled = false;
+  signingUp = false;
+}
     // Se veio session, já está logado
     await doPostLogin();
   }catch(e){
