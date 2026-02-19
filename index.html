@@ -353,16 +353,14 @@
     .overlay.open{display:flex}
 
     .modal{
-      width:min(1120px, 96vw);
-      background:rgba(15,23,42,.98);
-      border-radius:16px;
-      box-shadow:var(--shadow);
-      overflow:visible;
-      border:1px solid rgba(148,163,184,.18);
-      max-height: calc(100vh - 44px);
+      width:min(880px, 92vw);
+      max-width:92vw;
+      max-height:90vh;
+      overflow:hidden;
       display:flex;
       flex-direction:column;
     }
+
     .modal-top{
       display:flex;align-items:center;gap:10px;
       padding:12px 14px;
@@ -412,10 +410,13 @@
     }
 
     .modal-body{
-      display:grid;
-      grid-template-columns: 1.25fr .75fr;
-      gap:0;
-      overflow:auto;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      padding:16px;
+      overflow-y:auto;
+      overflow-x:hidden;
     }
     .left{padding:14px;border-right:1px solid rgba(148,163,184,.18)}
     .right{padding:14px;background:rgba(11,19,38,.55)}
@@ -970,6 +971,24 @@ body:not(.auth-locked) #loginGate{ display:none; }
   height:auto;
   padding:10px 12px;
   border-radius:12px;
+}
+
+.modal-body *{
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+.row.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.row.actions .mini{
+  width:auto;
+  height:auto;
+  padding:8px 12px;
 }
     
     
