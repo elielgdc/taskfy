@@ -350,8 +350,6 @@ let state = loadLocal();
 
   // DOM
   const board = document.getElementById("board");
-  const archiveDrop = document.getElementById("archiveDrop");
-  const viewArchivedBtn = document.getElementById("viewArchivedBtn");
 
 // =====================
 // Supabase (Login) - FIX ESTÁVEL
@@ -393,7 +391,6 @@ function setGateUI(){
   const gate = document.getElementById("loginGate");
   const board = document.getElementById("board");
   const topbar = document.querySelector(".topbar");
-  const archiveDrop = document.getElementById("archiveDrop");
 
   const logged = !!sbUser;
 
@@ -406,7 +403,6 @@ function setGateUI(){
   // 3) libera UI do app
   if (board) board.style.display = logged ? "" : "none";
   if (topbar) topbar.style.display = logged ? "" : "none";
-  if (archiveDrop) archiveDrop.style.display = logged ? "" : "none";
 }
 
 function ensureSb(){
@@ -773,6 +769,39 @@ list?.addEventListener("drop", (e) => {
       board.appendChild(colEl);
     }
 
+    const archivedCol = document.createElement("div");
+    archivedCol.className = "col archived-col";
+    archivedCol.innerHTML = `
+      <div class="col-head">
+        <span class="col-title">🗃️ Arquivado</span>
+        <span class="badge">${state.archived.length}</span>
+      </div>
+      <div class="archived-drop-zone" data-drop-archive>
+        <div class="archived-icon">✓</div>
+        <div class="archived-muted">Quantidade de cards finalizados</div>
+        <div class="archived-count">${state.archived.length} cards</div>
+        <button class="mini archived-view-btn" id="viewArchivedBtn" type="button">Visualizar todos</button>
+      </div>
+    `;
+
+    const archivedDrop = archivedCol.querySelector("[data-drop-archive]");
+    archivedDrop?.addEventListener("dragover", (e)=> e.preventDefault());
+    archivedDrop?.addEventListener("dragenter", ()=> archivedDrop.classList.add("drop-active"));
+    archivedDrop?.addEventListener("dragleave", ()=> archivedDrop.classList.remove("drop-active"));
+    archivedDrop?.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      archivedDrop.classList.remove("drop-active");
+      try{
+        const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
+        const { cardId } = payload;
+        if (!cardId) return;
+        archiveCard(cardId);
+      }catch{}
+    });
+
+    archivedCol.querySelector("#viewArchivedBtn")?.addEventListener("click", openArchivedModal);
+    board.appendChild(archivedCol);
+
     updateArchivedSidebar();
   }
 
@@ -817,24 +846,8 @@ function onDropToColumn(e, toCol){
   }catch{}
 }
 
-  // Archive as dropzone
-  if (archiveDrop){
-    archiveDrop?.addEventListener("dragover", (e)=> e.preventDefault());
-    archiveDrop?.addEventListener("dragenter", ()=> archiveDrop.classList.add("drop-active"));
-    archiveDrop?.addEventListener("dragleave", ()=> archiveDrop.classList.remove("drop-active"));
-    archiveDrop?.addEventListener("drop", (e)=>{
-      e.preventDefault();
-      archiveDrop.classList.remove("drop-active");
-      try{
-        const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
-        const { cardId } = payload;
-        if (!cardId) return;
-        archiveCard(cardId);
-      }catch{}
-    });
-  }
-
   // Card modal
+
   function openCard(cardId, colId){
     activeCardId = cardId;
     activeTab = "all";
@@ -1251,7 +1264,6 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
     archOverlay.classList.remove("open");
   }
 
-  viewArchivedBtn?.addEventListener("click", openArchivedModal);
   closeArch?.addEventListener("click", closeArchivedModal);
   archOverlay?.addEventListener("click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
   document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
