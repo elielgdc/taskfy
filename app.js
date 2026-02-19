@@ -352,178 +352,31 @@ let state = loadLocal();
   const archiveDrop = document.getElementById("archiveDrop");
   const viewArchivedBtn = document.getElementById("viewArchivedBtn");
 
-  // =====================
-// Supabase (Login)
+// =====================
+// Supabase (Login) - FIX ESTÁVEL
 // =====================
 const SUPABASE_URL = "https://bknethktrrecdfllndyo.supabase.co/";
 const SUPABASE_ANON_KEY = "sb_publishable_9v3vkdV27tpLF059ehpi8A_trs8Lymo";
+
 let sb = null;
 let sbUser = null;
 
-function setGateUI(){
-  const gate = document.getElementById("authGate");
-  const board = document.getElementById("board");
-  const topbar = document.querySelector(".topbar");
-  const logged = !!sbUser;
-
-  if (gate) gate.style.display = logged ? "none" : "block";
-  if (board) board.style.display = logged ? "" : "none";
-  if (topbar) topbar.style.display = logged ? "" : "none";
-}
-
-    
 const authBtn = document.getElementById("authBtn");
 const authStatus = document.getElementById("authStatus");
 
-
-// Tela de login (gate)
-const authGate = document.getElementById("authGate");
+// elementos do gate
+const authGate = document.getElementById("authGate"); // overlay (se existir)
+const loginGate = document.getElementById("loginGate"); // seu gate no HTML
 const loginEmail = document.getElementById("loginEmail");
-const loginPass = document.getElementById("loginPass");
-const loginBtn = document.getElementById("loginBtn");
-const signupBtn = document.getElementById("signupBtn");
-const loginGate = document.getElementById("loginGate");
-const appRoot = document.getElementById("app");
+const loginPass  = document.getElementById("loginPass");
+const loginBtn   = document.getElementById("loginBtn");
+const signupBtn  = document.getElementById("signupBtn");
 
-function lockApp(){
-  document.body.classList.add("auth-locked");
-}
-
-function unlockApp(){
-  document.body.classList.remove("auth-locked");
-}
-
-
-async function signInWithPassword(email, password){
-  if (!sb) throw new Error("Supabase não inicializado (sb = null). Recarregue a página.");
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return data;
-}
-
-async function signUpWithPassword(email, password){
-  if (!sb) throw new Error("Supabase não inicializado (sb = null). Recarregue a página.");
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) throw error;
-  return data;
-}
-
-
-
-let signingUp = false;
-
-signupBtn?.addEventListener("click", async () => {
-  if (signingUp) return;
-  signingUp = true;
-  signupBtn.disabled = true;
-
-  const email = (loginEmail?.value || "").trim();
-  const pass  = (loginPass?.value || "").trim();
-  if (!email || !pass) {
-    alert("Preencha email e senha.");
-    signupBtn.disabled = false;
-    signingUp = false;
-    return;
-  }
-  try {
-if (!sb) throw new Error("Supabase não inicializado. Recarregue a página.");
-
-const { data, error } = await sb.auth.signUp({
-  email,
-  password: pass
-});
-
-if (error) throw error;
-
-// Se exigir confirmação por email, não vem session
-if (!data?.session) {
-  alert("Conta criada! Agora confirme o e-mail para conseguir entrar.");
-  return;
-}
-
-// Se veio session, já está logado automaticamente
-sbUser = data.user;
-
-setGateUI();
-unlockApp?.();
-
-state = await load();
-render();
-
-  } catch (e) {
-    const msg = (e?.message || String(e));
-    if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already")) {
-      alert("Esse email já tem conta. Clique em Entrar.");
-    } else {
-      alert("Não consegui criar a conta: " + msg);
-    }
-  } finally {
-    signupBtn.disabled = false;
-    signingUp = false;
-  }
-});
-
-let loggingIn = false;
-
-loginBtn?.addEventListener("click", async () => {
-  if (loggingIn) return;
-  loggingIn = true;
-  loginBtn.disabled = true;
-
-  const email = (loginEmail?.value || "").trim();
-  const pass  = (loginPass?.value || "").trim();
-
-  if (!email || !pass) {
-    alert("Preencha email e senha.");
-    loginBtn.disabled = false;
-    loggingIn = false;
-    return;
-  }
-
-  try {
-    if (!sb) throw new Error("Supabase não inicializado. Recarregue a página.");
-
-    const { data, error } = await sb.auth.signInWithPassword({
-      email,
-      password: pass,
-    });
-
-    if (error) throw error;
-
-    // garante user
-    if (!data?.user) throw new Error("Login não retornou usuário (verifique confirmação por e-mail).");
-
-    // seta user global (se seu código usa sbUser)
-    sbUser = data.user;
-
-    // ✅ libera UI imediatamente
-    setGateUI();
-    unlockApp?.();
-
-
-    // ✅ carrega e renderiza
-    state = await load();
-    render();
-
-  } catch (e) {
-    alert("Erro ao entrar: " + (e?.message || String(e)));
-  } finally {
-    loginBtn.disabled = false;
-    loggingIn = false;
-  }
-});
-
-
-
-  
-// Enter no campo de senha = entrar
-loginPass?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") loginBtn?.click();
-});
+function lockApp(){ document.body.classList.add("auth-locked"); }
+function unlockApp(){ document.body.classList.remove("auth-locked"); }
 
 function setAuthUI(){
   if (!authBtn) return;
-
   if (sbUser){
     authBtn.textContent = "Sair";
     authBtn.title = "Sair da conta";
@@ -535,106 +388,185 @@ function setAuthUI(){
   }
 }
 
-function initSupabase(){
-  setGateUI(); // mostra a tela de login enquanto não estiver logado
-  if (!window.supabase) return;
-  if (!SUPABASE_URL.includes("http")) return; // ainda não colou as keys
-  
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Gate determinístico (não depende de CSS “open” pra funcionar)
+function setGateUI(){
+  const board = document.getElementById("board");
+  const topbar = document.querySelector(".topbar");
+  const logged = !!sbUser;
 
-    // ---- Login Gate (email/senha)
-  const loginBtn = document.getElementById("loginBtn");
-  const signupBtn = document.getElementById("signupBtn");
-  const loginEmail = document.getElementById("loginEmail");
-  const loginPass = document.getElementById("loginPass");
+  // mostra/esconde o gate que existir
+  if (authGate) authGate.style.display = logged ? "none" : "flex";
+  if (loginGate) loginGate.style.display = logged ? "none" : "block";
 
-  async function doLogin(){
-    const email = (loginEmail?.value || "").trim();
-    const password = (loginPass?.value || "").trim();
-    if (!email || !password) { alert("Preencha email e senha."); return; }
+  if (board) board.style.display = logged ? "" : "none";
+  if (topbar) topbar.style.display = logged ? "" : "none";
 
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) alert("Erro ao entrar: " + error.message);
+  document.body.classList.toggle("auth-locked", !logged);
+}
+
+function ensureSb(){
+  if (!window.supabase) throw new Error("Biblioteca do Supabase não carregou. Recarregue (Ctrl+Shift+R).");
+  if (!SUPABASE_URL.includes("http")) throw new Error("SUPABASE_URL inválida.");
+  if (!SUPABASE_ANON_KEY) throw new Error("SUPABASE_ANON_KEY vazia.");
+
+  if (!sb){
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
   }
+  return sb;
+}
 
-  async function doSignup(){
-    const email = (loginEmail?.value || "").trim();
-    const password = (loginPass?.value || "").trim();
-    if (!email || !password) { alert("Preencha email e senha."); return; }
-
-    const { error } = await sb.auth.signUp({ email, password });
-    if (error) alert("Erro ao criar conta: " + error.message);
-    else alert("Conta criada! Agora clique em Entrar.");
-  }
-
-//  loginBtn?.addEventListener("click", doLogin); // (desativado: handlers globais já cuidam)
-// signupBtn?.addEventListener("click", doSignup); // (desativado: handlers globais já cuidam)
-
-  loginPass?.addEventListener("keydown", (e) => {
-//     if (e.key === "Enter") doLogin(); // (desativado: handlers globais já cuidam)
-  });
-
-  // sessão atual
-  sb.auth.getSession().then(async ({ data })=>{
-    sbUser = data?.session?.user || null;
-    setAuthUI();
-
-    if (sbUser){
-      setGateUI();
-      state = await load();
-      sanitizeState();
-      render();
-    } else {
-      setGateUI();
-    }
-  });
-
-// mudanças de sessão (login/logout)
-  sb.auth.onAuthStateChange(async (_event, session)=>{
-    sbUser = session?.user || null;
-    setAuthUI();
-
-    if (sbUser){
-      setGateUI();
-      state = await load();
-      sanitizeState();
-      render();
-      saveSoon?.(); // se existir, não quebra
-    } else {
-      setGateUI();
-    }
-  });
-
+async function doPostLogin(){
+  // sempre pega a sessão atual e aplica UI + dados
+  const { data } = await sb.auth.getSession();
+  sbUser = data?.session?.user || null;
 
   setAuthUI();
-}
+  setGateUI();
 
-async function signInWithEmail(){
-  if (!sb){
-    alert("Supabase ainda não configurado. Cole SUPABASE_URL e SUPABASE_ANON_KEY no app.js.");
-    return;
+  if (sbUser){
+    state = await load();
+    sanitizeState?.();
+    render();
+    saveSoon?.();
   }
-  const email = prompt("Digite seu email para receber o link de login:");
-  if (!email) return;
+}
 
-  const redirectTo = window.location.origin + window.location.pathname; // volta pro /taskfy
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo }
-  });
+let loggingIn = false;
+let signingUp = false;
 
-  if (error){
-    alert("Erro ao enviar link: " + error.message);
-    return;
+async function signInWithPassword(email, password){
+  ensureSb();
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+async function signUpWithPassword(email, password){
+  ensureSb();
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) throw error;
+  return data;
+}
+
+loginBtn?.addEventListener("click", async () => {
+  if (loggingIn) return;
+  loggingIn = true;
+  loginBtn.disabled = true;
+
+  const email = (loginEmail?.value || "").trim();
+  const pass  = (loginPass?.value || "").trim();
+
+  try{
+    if (!email || !pass) throw new Error("Preencha email e senha.");
+
+    const res = await signInWithPassword(email, pass);
+
+    // se logou, atualiza tudo na marra (sem depender de evento)
+    sbUser = res?.user || null;
+    await doPostLogin();
+
+    // se ainda assim não tiver user, explica
+    if (!sbUser) throw new Error("Login não retornou usuário. Se sua conta exige confirmação de e-mail, confirme primeiro.");
+  }catch(e){
+    alert("Erro ao entrar: " + (e?.message || String(e)));
+  }finally{
+    loginBtn.disabled = false;
+    loggingIn = false;
   }
-  alert("Link enviado! Abra seu email e clique no link para entrar.");
-}
+});
 
-async function signOut(){
-  if (!sb) return;
-  await sb.auth.signOut();
-}
+signupBtn?.addEventListener("click", async () => {
+  if (signingUp) return;
+  signingUp = true;
+  signupBtn.disabled = true;
 
+  const email = (loginEmail?.value || "").trim();
+  const pass  = (loginPass?.value || "").trim();
+
+  try{
+    if (!email || !pass) throw new Error("Preencha email e senha.");
+
+    const res = await signUpWithPassword(email, pass);
+
+    // Se o projeto exigir confirmação de e-mail, session vem null.
+    if (!res?.session){
+      alert("Conta criada! Agora CONFIRME o e-mail para conseguir entrar.");
+      return;
+    }
+
+    // Se veio session, já está logado
+    await doPostLogin();
+  }catch(e){
+    const msg = (e?.message || String(e));
+    if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate")){
+      alert("Esse e-mail já tem conta. Clique em Entrar.");
+    } else {
+      alert("Erro ao criar conta: " + msg);
+    }
+  }finally{
+    signupBtn.disabled = false;
+    signingUp = false;
+  }
+});
+
+// Enter no campo senha = entrar
+loginPass?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") loginBtn?.click();
+});
+
+// Botão Entrar/Sair do topo
+authBtn?.addEventListener("click", async ()=>{
+  try{
+    ensureSb();
+    if (sbUser){
+      await sb.auth.signOut();
+      sbUser = null;
+      setAuthUI();
+      setGateUI();
+    } else {
+      setGateUI();
+      setTimeout(()=> loginEmail?.focus?.(), 0);
+    }
+  }catch(e){
+    alert(e?.message || String(e));
+  }
+});
+
+function initSupabase(){
+  try{
+    ensureSb();
+
+    // sessão atual
+    doPostLogin();
+
+    // reage a mudanças de sessão
+    sb.auth.onAuthStateChange(async (_event, session)=>{
+      sbUser = session?.user || null;
+      setAuthUI();
+      setGateUI();
+      if (sbUser){
+        state = await load();
+        sanitizeState?.();
+        render();
+        saveSoon?.();
+      }
+    });
+
+    setAuthUI();
+    setGateUI();
+  }catch(e){
+    // se falhar aqui, você vai ver claramente o motivo
+    console.error(e);
+    setAuthUI();
+    setGateUI();
+  }
+}
 
   // Card modal refs
   const overlay = document.getElementById("overlay");
