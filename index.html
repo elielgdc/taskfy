@@ -810,6 +810,73 @@ body:not(.auth-locked) #loginGate{ display:none; }
   padding: 0;
 }
 
+/* ===== FIX MODAL LAYOUT (corrige desalinhamento) ===== */
+
+/* seu HTML usa .modal-head (não .modal-top) */
+.modal-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid rgba(148,163,184,.18);
+  background:rgba(11,19,38,.85);
+}
+
+/* o input de título precisa ter estilo (no HTML ele não tem class) */
+#modalTitle{
+  flex:1;
+  min-width: 240px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+#modalTitle::placeholder{ opacity:.6; }
+#modalTitle:focus{ background: rgba(255,255,255,.05); }
+
+/* seu CSS atual deixa .modal-body em GRID, mas seu HTML não tem .left/.right */
+.modal-body{
+  display:flex !important;
+  flex-direction:column;
+  gap:12px;
+  padding:14px;
+  overflow:auto;
+}
+
+/* organiza os “rows” e evita botão quebrado/colado */
+.modal-body .row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.modal-body .row.actions{
+  justify-content:flex-end;
+}
+
+/* deixa checklist/notas com cara de seção */
+.checklist, .notes, #details{
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:14px;
+  background:rgba(15,23,42,.92);
+  padding:12px;
+}
+
+/* textarea do bloco de notas ocupa melhor */
+#newNote{
+  min-height:120px;
+}
+
+/* evita que botões fiquem espremidos */
+.modal-body .mini{
+  white-space:nowrap;
+}
+    
     
 </style>
 </meta></head>
@@ -859,7 +926,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <input id="dueDate" type="date"/>
 <div id="dueGrid"></div>
 </div>
-<div id="details"></div>
+<textarea id="details" class="textarea" placeholder="Detalhes do card..."></textarea>
 <div class="checklist">
 <div class="row">
 <input id="newTask" placeholder="Nova tarefa" type="text"/>
