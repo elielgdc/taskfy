@@ -594,7 +594,10 @@ function initSupabase(){
   const dueMonth = document.getElementById("dueMonth");
   const dueGrid = document.getElementById("dueGrid");
   const dueTodayBtn = document.getElementById("dueToday");
+  const dueTomorrowBtn = document.getElementById("dueTomorrow");
   const dueClearBtn = document.getElementById("dueClear");
+  const dueRemoveBtn = document.getElementById("dueRemove");
+  const dueApplyBtn = document.getElementById("dueApply");
   const newNote = document.getElementById("newNote");
   const addNoteBtn = document.getElementById("addNoteBtn");
   const saveDetailsBtn = document.getElementById("saveDetailsBtn");
@@ -987,13 +990,17 @@ function renderDuePop(){
 
   // para marcar selecionado (se tiver)
   const selectedISO = dueDate.value || "";
+  dueTodayBtn?.classList.toggle("active", selectedISO === isoFromDate(new Date()));
+  const tm = new Date(); tm.setDate(tm.getDate()+1);
+  dueTomorrowBtn?.classList.toggle("active", selectedISO === isoFromDate(tm));
+  dueClearBtn?.classList.toggle("active", !selectedISO);
 
   // 1) dias “vazios” do começo (mostra do mês anterior, bem apagado)
   for (let i=0; i<startDow; i++){
     const btn = document.createElement("button");
     btn.className = "due-day muted";
     btn.type = "button";
-    btn.textContent = "·";
+    btn.textContent = "";
     btn?.addEventListener("click", ()=>{});
     dueGrid.appendChild(btn);
   }
@@ -1062,12 +1069,35 @@ dueTodayBtn?.addEventListener("click", (e)=>{
   closeDuePop();
 });
 
+dueTomorrowBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (!dueDate) return;
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+  dueDate.value = isoFromDate(d);
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
 // Sem data
 dueClearBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
   if (!dueDate) return;
   dueDate.value = "";
   dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+dueRemoveBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (!dueDate) return;
+  dueDate.value = "";
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+dueApplyBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
   closeDuePop();
 });
 

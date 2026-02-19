@@ -622,104 +622,51 @@
 .due-pop{
   position:absolute;
   top: calc(100% + 10px);
-  left: 0;
-  width: 310px;
-  background: rgba(15,23,42,98);
-  border: 1px solid rgba(148,163,184,18);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+  right: 0;
+  width: 258px;
+  background: #1b2d3b;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 0;
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
   padding: 12px;
   display:none;
   z-index: 999;
 }
 
 .due-pop.open{ display:block; }
-
-.due-pop-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:10px;
-}
-
-.due-nav{
-  width:34px;height:34px;
-  border-radius:10px;
-  border:1px solid rgba(148,163,184,18);
-  background: rgba(148,163,184,06);
-  color:#e5e7eb;
-  cursor:pointer;
-  font-size:18px;
-  font-weight:1000;
-}
-
-.due-month{
-  flex:1;
-  text-align:center;
-  font-weight:1000;
-  color:#e5e7eb;
-}
-
-.due-quick{
-  display:flex;
-  gap:8px;
-  margin-bottom:10px;
-}
-
+.due-pop-title{font-size:28px;font-weight:900;color:#f1f5f9;margin-bottom:10px;}
+.due-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;}
 .due-q{
-  flex:1;
-  border:1px solid rgba(148,163,184,18);
-  background: rgba(148,163,184,06);
-  color:#e5e7eb;
-  border-radius:10px;
-  padding:8px 10px;
+  border:1px solid #35526a;
+  background:#1d3343;
+  color:#e7eef7;
+  border-radius:3px;
+  padding:6px 8px;
+  font-weight:800;
   cursor:pointer;
-  font-weight:1000;
 }
-
-.due-q:hover{ background: rgba(148,163,184,10); }
-
-.due-dow{
-  display:grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap:6px;
-  color: var(--muted);
-  font-weight:1000;
-  font-size:12px;
-  margin-bottom:8px;
-  text-align:center;
-}
-
-.due-grid{
-  display:grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap:6px;
-}
-
+.due-q.active{border-color:#1f86ff;background:#0f3058;color:#7ec2ff}
+.due-pop-head{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;margin-bottom:8px;}
+.due-nav{background:transparent;border:0;color:#cfd8e3;font-size:24px;line-height:1;cursor:pointer;padding:0}
+.due-month{text-align:center;color:#f8fbff;font-weight:900}
+.due-dow,.due-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.due-dow{color:#f8fbff;font-weight:900;margin-bottom:4px}
 .due-day{
-  height:34px;
-  border-radius:10px;
-  border:1px solid rgba(148,163,184,18);
-  background: rgba(148,163,184,06);
-  color:#e5e7eb;
+  height:30px;
+  border:0;
+  border-radius:4px;
+  background:transparent;
+  color:#f8fbff;
   cursor:pointer;
-  font-weight:1000;
+  font-weight:700;
 }
+.due-day:hover{ background: rgba(59,130,246,.2); }
+.due-day.muted{ color: transparent; pointer-events:none; }
+.due-day.sel{ background:#0d3f78; outline:1px solid #3b82f6; }
+.due-pop-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.due-link{border:0;background:transparent;color:#d9e3ef;font-weight:700;cursor:pointer}
+.due-define{border:0;background:#2b77ff;color:#fff;border-radius:4px;padding:8px 14px;font-weight:900;cursor:pointer}
 
-.due-day:hover{ background: rgba(148,163,184,10); }
-
-.due-day.muted{
-  opacity:.35;
-}
-
-.due-day.sel{
-  outline: 2px solid rgba(59,130,246,.65);
-  background: rgba(59,130,246,.18);
-}
-
-    
-  
 /* ===== Login Gate (tela de login) ===== */
 body.auth-locked .topbar,
 body.auth-locked .wrap{ display:none; }
@@ -957,6 +904,7 @@ body:not(.auth-locked) #loginGate{ display:none; }
 .timeline-hint{margin-top:12px;font-size:13px;font-weight:900;line-height:1.35;color:#dbe6ff}
 
 
+
 </style>
 </meta></head>
 <body>
@@ -984,7 +932,30 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div class="modal">
 <div class="modal-head">
 <input id="modalTitle" placeholder="Insira o título do seu card" type="text"/>
+<div class="due-wrap">
 <button class="mini" id="duePill" type="button">📅 Sem prazo</button>
+<div class="due-pop" id="duePop">
+<div class="due-pop-title">Data simples</div>
+<div class="due-quick">
+<button class="due-q" id="dueToday" type="button">Hoje</button>
+<button class="due-q" id="dueTomorrow" type="button">Amanhã</button>
+<button class="due-q" id="dueClear" type="button">Sem data</button>
+</div>
+<div class="due-pop-head">
+<button class="due-nav" id="duePrev" type="button">‹</button>
+<div class="muted due-month" id="dueMonth"></div>
+<button class="due-nav" id="dueNext" type="button">›</button>
+</div>
+<div class="due-dow" id="dueDow">
+<span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span>
+</div>
+<div class="due-grid" id="dueGrid"></div>
+<div class="due-pop-footer">
+<button class="due-link" id="dueRemove" type="button">Remover data</button>
+<button class="due-define" id="dueApply" type="button">Definir</button>
+</div>
+</div>
+</div>
 <input id="dueDate" type="date" style="display:none;"/>
 <button class="mini" id="closeModal" type="button">✕</button>
 </div>
@@ -1035,18 +1006,6 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div id="timeline"></div>
 </div>
 <div class="timeline-hint">Arraste cards entre colunas. Arraste para “Arquivado” para esconder do quadro.</div>
-</div>
-<div class="due-pop" id="duePop">
-<div class="due-pop-head">
-<button class="mini" id="duePrev" type="button">◀</button>
-<div class="muted" id="dueMonth"></div>
-<button class="mini" id="dueNext" type="button">▶</button>
-</div>
-<div class="due-pop-actions">
-<button class="mini" id="dueToday" type="button">Hoje</button>
-<button class="mini" id="dueClear" type="button">Limpar</button>
-</div>
-<div id="dueGrid"></div>
 </div>
 <span class="muted" id="dueLabel" style="display:none;">Prazo:</span>
 </div>
