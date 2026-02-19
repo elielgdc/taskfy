@@ -63,6 +63,10 @@
     .dot{width:10px;height:10px;border-radius:999px;background:#7ac943}
     .user{font-weight:900}
     .spacer{flex:1}
+    .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;}
+    .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:0;}
+    .brand{font-weight:1000;color:#e2e8f0;}
+    .muted{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;}
     .search{
       display:flex;align-items:center;gap:8px;
       background:rgba(148,163,184,.10);
@@ -830,60 +834,72 @@ body:not(.auth-locked) #loginGate{ display:none; }
 <div id="archiveDrop" style="display:none;"></div>
 </div>
 <!-- Modal overlay / detalhes do card -->
-<div class="overlay" id="overlay" style="display:none;">
+<div class="overlay" id="overlay">
 <div class="modal">
-<div class="modal-head">
-<input id="modalTitle" placeholder="Insira o título do card" type="text"/>
-<button class="mini" id="closeModal" type="button">Fechar</button>
+<div class="modal-top">
+<input class="modalTitleInput" id="modalTitle" placeholder="Insira o título do card" type="text"/>
+<div class="due-wrap">
+<button class="due-pill" id="duePill" type="button">📅 <small>Prazo</small> <span id="dueLabel">Sem prazo</span></button>
+<div class="due-pop" id="duePop">
+<div class="due-pop-top">
+<button class="due-nav" id="duePrev" type="button">◀</button>
+<div class="due-month" id="dueMonth"></div>
+<button class="due-nav" id="dueNext" type="button">▶</button>
+</div>
+<div class="due-quick">
+<button class="due-q" id="dueToday" type="button">Hoje</button>
+<button class="due-q" id="dueClear" type="button">Limpar</button>
+</div>
+<input class="due-hidden" id="dueDate" type="date"/>
+<div class="due-grid" id="dueGrid"></div>
+</div>
+</div>
+<button class="modal-close" id="closeModal" type="button">✕</button>
 </div>
 <div class="modal-body">
+<div class="left">
 <div class="muted" id="cardWhere"></div>
+<div class="section">
+<div class="sec-head"><div class="sec-title">Detalhes</div></div>
+<textarea class="textarea" id="details" placeholder="Descreva contexto, próximos passos e observações..."></textarea>
+</div>
+<div class="section checklist">
+<div class="sec-head"><div class="sec-title">Checklist</div></div>
 <div class="row">
-<button class="mini" id="duePill" type="button">Prazo</button>
-<span class="muted" id="dueLabel">Prazo:</span>
+<input class="input" id="newTask" placeholder="Nova tarefa" type="text"/>
+<button class="btn" id="addTaskBtn" type="button">Adicionar</button>
 </div>
-<div class="due-pop" id="duePop">
-<div class="due-pop-head">
-<button class="mini" id="duePrev" type="button">◀</button>
-<div class="muted" id="dueMonth"></div>
-<button class="mini" id="dueNext" type="button">▶</button>
+<div id="taskList" style="margin-top:10px;"></div>
 </div>
-<div class="due-pop-actions">
-<button class="mini" id="dueToday" type="button">Hoje</button>
-<button class="mini" id="dueClear" type="button">Limpar</button>
-</div>
-<input id="dueDate" type="date"/>
-<div id="dueGrid"></div>
-</div>
-<div id="details"></div>
-<div class="checklist">
-<div class="row">
-<input id="newTask" placeholder="Nova tarefa" type="text"/>
-<button class="mini" id="addTaskBtn" type="button">Adicionar</button>
-</div>
-<div id="taskList"></div>
-</div>
-<div class="notes">
-<div class="row">
-<textarea id="newNote" placeholder="Nova nota"></textarea>
-<button class="mini" id="addNoteBtn" type="button">Salvar nota</button>
+<div class="section notes">
+<div class="sec-head"><div class="sec-title">Notas</div></div>
+<div class="row" style="align-items:flex-start;">
+<textarea class="textarea" id="newNote" placeholder="Nova nota" style="min-height:96px;"></textarea>
+<button class="btn" id="addNoteBtn" type="button">Salvar nota</button>
 </div>
 </div>
-<div class="row actions">
-<button class="mini" id="saveDetailsBtn" type="button">Salvar</button>
-<button class="mini" id="createCardBtn" type="button">Criar card</button>
-<button class="mini" id="archiveFromModalBtn" type="button">Arquivar</button>
-<button class="mini" id="deleteCardBtn" type="button">Excluir</button>
+<div class="row actions" style="justify-content:flex-end;flex-wrap:wrap;">
+<button class="btn" id="saveDetailsBtn" type="button">Salvar</button>
+<button class="btn" id="createCardBtn" type="button">Criar card</button>
+<button class="btn" id="archiveFromModalBtn" type="button">Arquivar</button>
+<button class="btn" id="deleteCardBtn" type="button">Excluir</button>
+</div>
+</div>
+<div class="right">
+<div class="tabs">
+<div class="tab active" data-tab="all">Tudo</div>
+<div class="tab" data-tab="notes">Notas</div>
+<div class="tab" data-tab="logs">Logs</div>
+</div>
+<div class="timeline" id="timeline"></div>
 </div>
 </div>
 </div>
 </div>
-<!-- Timeline -->
-<div id="timeline" style="display:none;"></div>
 <!-- Arquivados -->
-<div class="overlay" id="archOverlay" style="display:none;">
+<div class="overlay" id="archOverlay">
 <div class="modal">
-<div class="modal-head">
+<div class="modal-top">
 <div class="muted" style="font-weight:700;">Arquivados</div>
 <button class="mini" id="closeArch" type="button">Fechar</button>
 </div>
