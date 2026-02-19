@@ -426,12 +426,13 @@ function ensureSb(){
 }
 
 async function doPostLogin(){
-  // sempre pega a sessão atual e aplica UI + dados
-  const { data } = await sb.auth.getSession();
+  const { data, error } = await sb.auth.getSession();
+  if (error) throw error;
+
   sbUser = data?.session?.user || null;
 
-  setAuthUI();
-  setGateUI();
+  setAuthUI?.();
+  setGateUI?.();
 
   if (sbUser){
     state = await load();
@@ -472,7 +473,7 @@ loginBtn?.addEventListener("click", async () => {
     const res = await signInWithPassword(email, pass);
 
     // se logou, atualiza tudo na marra (sem depender de evento)
-    sbUser = res?.user || null;
+    
     await doPostLogin();
 
     // se ainda assim não tiver user, explica
