@@ -116,9 +116,13 @@ window.onerror = (msg, src, line, col, err) => {
 
 // ===================== Persistência (local + online) =====================
 
-function loadLocal(){
+function localKey(userId = null){
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
+function loadLocal(userId = null){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(localKey(userId));
     if (!raw) return seedWithExamples();
     const parsed = JSON.parse(raw);
 
@@ -142,10 +146,11 @@ async function loadOnline(){
       .from("boards")
       .select("data")
       .eq("user_id", sbUser.id)
-      .maybeSingle();
+      .order("updated_at", { ascending:false })
+      .limit(1);
 
     if (error) return null;
-    if (data && data.data) return data.data;
+    if (Array.isArray(data) && data[0]?.data) return data[0].data;
     return null;
   }catch(e){
     return null;
@@ -153,15 +158,21 @@ async function loadOnline(){
 }
 
 async function load(){
-  // se estiver logado → tenta carregar online, senão cai pro local
-  const online = await loadOnline();
-  if (online) return online;
+  // logado: prioriza online; fallback para cache local da própria conta
+  if (sbUser && sb){
+    const online = await loadOnline();
+    if (online){
+      try { localStorage.setItem(localKey(sbUser.id), JSON.stringify(online)); } catch(e){}
+      return online;
+    }
+    return loadLocal(sbUser.id);
+  }
   return loadLocal();
 }
 
-function saveLocal(){
+function saveLocal(userId = null){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(localKey(userId), JSON.stringify(state));
   }catch(e){}
 }
 
@@ -174,7 +185,7 @@ async function saveOnline(){
         user_id: sbUser.id,
         data: state,
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: "user_id" });
   }catch(e){}
 }
 
@@ -189,6 +200,7 @@ function save(){
   // se estiver logado → salva online; senão salva local
   if (sbUser && sb){
     saveOnline();
+    saveLocal(sbUser.id);
   }else{
     saveLocal();
   }
@@ -435,7 +447,6 @@ async function doPostLogin(){
     state = await load();
     sanitizeState?.();
     render();
-    saveSoon?.();
   }
 }
 
@@ -555,7 +566,6 @@ function initSupabase(){
         state = await load();
         sanitizeState?.();
         render();
-        saveSoon?.();
       }
     });
 
