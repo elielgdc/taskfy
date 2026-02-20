@@ -116,9 +116,13 @@ window.onerror = (msg, src, line, col, err) => {
 
 // ===================== Persistência (local + online) =====================
 
-function loadLocal(){
+function localKey(userId = null){
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
+function loadLocal(userId = null){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(localKey(userId));
     if (!raw) return seedWithExamples();
     const parsed = JSON.parse(raw);
 
@@ -142,10 +146,11 @@ async function loadOnline(){
       .from("boards")
       .select("data")
       .eq("user_id", sbUser.id)
-      .maybeSingle();
+      .order("updated_at", { ascending:false })
+      .limit(1);
 
     if (error) return null;
-    if (data && data.data) return data.data;
+    if (Array.isArray(data) && data[0]?.data) return data[0].data;
     return null;
   }catch(e){
     return null;
@@ -153,15 +158,21 @@ async function loadOnline(){
 }
 
 async function load(){
-  // se estiver logado → tenta carregar online, senão cai pro local
-  const online = await loadOnline();
-  if (online) return online;
+  // logado: prioriza online; fallback para cache local da própria conta
+  if (sbUser && sb){
+    const online = await loadOnline();
+    if (online){
+      try { localStorage.setItem(localKey(sbUser.id), JSON.stringify(online)); } catch(e){}
+      return online;
+    }
+    return loadLocal(sbUser.id);
+  }
   return loadLocal();
 }
 
-function saveLocal(){
+function saveLocal(userId = null){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(localKey(userId), JSON.stringify(state));
   }catch(e){}
 }
 
@@ -174,7 +185,7 @@ async function saveOnline(){
         user_id: sbUser.id,
         data: state,
         updated_at: new Date().toISOString()
-      });
+      }, { onConflict: "user_id" });
   }catch(e){}
 }
 
@@ -189,6 +200,7 @@ function save(){
   // se estiver logado → salva online; senão salva local
   if (sbUser && sb){
     saveOnline();
+    saveLocal(sbUser.id);
   }else{
     saveLocal();
   }
@@ -251,9 +263,9 @@ let state = loadLocal();
     save();
   }
 
-  function createCard(title, colId){
+  function createCard(title, colId, dueTs = null){
     const id = uid();
-    const due = null; // default: sem prazo
+    const due = dueTs ?? null;
     state.cards[id] = {
       id,
       title,
@@ -264,6 +276,7 @@ let state = loadLocal();
       timeline: [
         { type:"log", ts: nowTs(), text:"Criou o card." },
         { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
+        ...(due ? [{ type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` }] : []),
       ]
     };
     state.columns[colId].unshift(id);
@@ -349,8 +362,6 @@ let state = loadLocal();
 
   // DOM
   const board = document.getElementById("board");
-  const archiveDrop = document.getElementById("archiveDrop");
-  const viewArchivedBtn = document.getElementById("viewArchivedBtn");
 
 // =====================
 // Supabase (Login) - FIX ESTÁVEL
@@ -392,7 +403,6 @@ function setGateUI(){
   const gate = document.getElementById("loginGate");
   const board = document.getElementById("board");
   const topbar = document.querySelector(".topbar");
-  const archiveDrop = document.getElementById("archiveDrop");
 
   const logged = !!sbUser;
 
@@ -405,7 +415,6 @@ function setGateUI(){
   // 3) libera UI do app
   if (board) board.style.display = logged ? "" : "none";
   if (topbar) topbar.style.display = logged ? "" : "none";
-  if (archiveDrop) archiveDrop.style.display = logged ? "" : "none";
 }
 
 function ensureSb(){
@@ -438,7 +447,6 @@ async function doPostLogin(){
     state = await load();
     sanitizeState?.();
     render();
-    saveSoon?.();
   }
 }
 
@@ -558,7 +566,6 @@ function initSupabase(){
         state = await load();
         sanitizeState?.();
         render();
-        saveSoon?.();
       }
     });
 
@@ -593,7 +600,10 @@ function initSupabase(){
   const dueMonth = document.getElementById("dueMonth");
   const dueGrid = document.getElementById("dueGrid");
   const dueTodayBtn = document.getElementById("dueToday");
+  const dueTomorrowBtn = document.getElementById("dueTomorrow");
   const dueClearBtn = document.getElementById("dueClear");
+  const dueRemoveBtn = document.getElementById("dueRemove");
+  const dueApplyBtn = document.getElementById("dueApply");
   const newNote = document.getElementById("newNote");
   const addNoteBtn = document.getElementById("addNoteBtn");
   const saveDetailsBtn = document.getElementById("saveDetailsBtn");
@@ -613,6 +623,7 @@ function initSupabase(){
 
   let activeCardId = null;
   let activeTab = "all";
+  let pendingNewCardDueTs = null;
 
   // Menus
   function closeAllMenus(){
@@ -767,6 +778,39 @@ list?.addEventListener("drop", (e) => {
       board.appendChild(colEl);
     }
 
+    const archivedCol = document.createElement("div");
+    archivedCol.className = "col archived-col";
+    archivedCol.innerHTML = `
+      <div class="col-head">
+        <span class="col-title">🗃️ Arquivado</span>
+        <span class="badge">${state.archived.length}</span>
+      </div>
+      <div class="archived-drop-zone" data-drop-archive>
+        <div class="archived-icon">✓</div>
+        <div class="archived-muted">Quantidade de cards finalizados</div>
+        <div class="archived-count">${state.archived.length} cards</div>
+        <button class="mini archived-view-btn" id="viewArchivedBtn" type="button">Visualizar todos</button>
+      </div>
+    `;
+
+    const archivedDrop = archivedCol.querySelector("[data-drop-archive]");
+    archivedDrop?.addEventListener("dragover", (e)=> e.preventDefault());
+    archivedDrop?.addEventListener("dragenter", ()=> archivedDrop.classList.add("drop-active"));
+    archivedDrop?.addEventListener("dragleave", ()=> archivedDrop.classList.remove("drop-active"));
+    archivedDrop?.addEventListener("drop", (e)=>{
+      e.preventDefault();
+      archivedDrop.classList.remove("drop-active");
+      try{
+        const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
+        const { cardId } = payload;
+        if (!cardId) return;
+        archiveCard(cardId);
+      }catch{}
+    });
+
+    archivedCol.querySelector("#viewArchivedBtn")?.addEventListener("click", openArchivedModal);
+    board.appendChild(archivedCol);
+
     updateArchivedSidebar();
   }
 
@@ -811,24 +855,8 @@ function onDropToColumn(e, toCol){
   }catch{}
 }
 
-  // Archive as dropzone
-  if (archiveDrop){
-    archiveDrop?.addEventListener("dragover", (e)=> e.preventDefault());
-    archiveDrop?.addEventListener("dragenter", ()=> archiveDrop.classList.add("drop-active"));
-    archiveDrop?.addEventListener("dragleave", ()=> archiveDrop.classList.remove("drop-active"));
-    archiveDrop?.addEventListener("drop", (e)=>{
-      e.preventDefault();
-      archiveDrop.classList.remove("drop-active");
-      try{
-        const payload = JSON.parse(e.dataTransfer.getData("text/plain") || "{}");
-        const { cardId } = payload;
-        if (!cardId) return;
-        archiveCard(cardId);
-      }catch{}
-    });
-  }
-
   // Card modal
+
   function openCard(cardId, colId){
     activeCardId = cardId;
     activeTab = "all";
@@ -840,9 +868,11 @@ if (!cardId){
   modalTitle.value = "";
   details.value = "";
   cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+  pendingNewCardDueTs = null;
 
   dueLabel.textContent = "Prazo";
-  dueDate.value = "";
+  if (duePill) duePill.textContent = "📅 Sem prazo";
+  if (dueDate) dueDate.value = "";
 
   overlay.dataset.newcol = colId;
   overlay.classList.add("open");
@@ -856,7 +886,8 @@ details.value = c.details || "";
 cardWhere.textContent = `Na coluna: ${colName(colId)}`;
 
 dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
-dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
+if (dueDate) dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
 
 renderTimeline();
 renderTasks();
@@ -873,7 +904,7 @@ function closeCard(){
 
     if (title) {
       const colId = overlay.dataset.newcol;
-      createCard(title, colId);
+      createCard(title, colId, pendingNewCardDueTs);
     }
 
     delete overlay.dataset.newcol;
@@ -881,6 +912,7 @@ function closeCard(){
 
   overlay.classList.remove("open");
   activeCardId = null;
+  pendingNewCardDueTs = null;
   newNote.value = "";
   newTask.value = "";
 }
@@ -958,17 +990,20 @@ function monthLabel(dt){
 }
 
 function openDuePop(){
+  if (!duePop) return;
   duePop.classList.add("open");
   duePop.setAttribute("aria-hidden","false");
   renderDuePop();
 }
 
 function closeDuePop(){
+  if (!duePop) return;
   duePop.classList.remove("open");
   duePop.setAttribute("aria-hidden","true");
 }
 
 function renderDuePop(){
+  if (!dueMonth || !dueGrid || !dueDate) return;
   dueMonth.textContent = monthLabel(dueView);
   dueGrid.innerHTML = "";
 
@@ -981,13 +1016,17 @@ function renderDuePop(){
 
   // para marcar selecionado (se tiver)
   const selectedISO = dueDate.value || "";
+  dueTodayBtn?.classList.toggle("active", selectedISO === isoFromDate(new Date()));
+  const tm = new Date(); tm.setDate(tm.getDate()+1);
+  dueTomorrowBtn?.classList.toggle("active", selectedISO === isoFromDate(tm));
+  dueClearBtn?.classList.toggle("active", !selectedISO);
 
   // 1) dias “vazios” do começo (mostra do mês anterior, bem apagado)
   for (let i=0; i<startDow; i++){
     const btn = document.createElement("button");
     btn.className = "due-day muted";
     btn.type = "button";
-    btn.textContent = "·";
+    btn.textContent = "";
     btn?.addEventListener("click", ()=>{});
     dueGrid.appendChild(btn);
   }
@@ -1016,6 +1055,8 @@ function renderDuePop(){
 duePill?.addEventListener("click", (e)=>{
   e.stopPropagation();
 
+  if (!dueDate || !duePop) return;
+
   // define o mês mostrado: se já existe data, abre naquele mês; senão, mês atual
   if (dueDate.value){
     const [yy,mm,dd] = dueDate.value.split("-").map(Number);
@@ -1032,11 +1073,13 @@ duePill?.addEventListener("click", (e)=>{
 // navegar meses
 duePrev?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueGrid || !dueMonth) return;
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()-1, 1);
   renderDuePop();
 });
 dueNext?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueGrid || !dueMonth) return;
   dueView = new Date(dueView.getFullYear(), dueView.getMonth()+1, 1);
   renderDuePop();
 });
@@ -1044,6 +1087,7 @@ dueNext?.addEventListener("click", (e)=>{
 // Hoje
 dueTodayBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueDate) return;
   const now = new Date();
   const iso = isoFromDate(now);
   dueDate.value = iso;
@@ -1051,11 +1095,35 @@ dueTodayBtn?.addEventListener("click", (e)=>{
   closeDuePop();
 });
 
+dueTomorrowBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (!dueDate) return;
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+  dueDate.value = isoFromDate(d);
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
 // Sem data
 dueClearBtn?.addEventListener("click", (e)=>{
   e.stopPropagation();
+  if (!dueDate) return;
   dueDate.value = "";
   dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+dueRemoveBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
+  if (!dueDate) return;
+  dueDate.value = "";
+  dueDate.dispatchEvent(new Event("change", { bubbles:true }));
+  closeDuePop();
+});
+
+dueApplyBtn?.addEventListener("click", (e)=>{
+  e.stopPropagation();
   closeDuePop();
 });
 
@@ -1066,26 +1134,37 @@ document.addEventListener("click", () => {
 duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
   dueDate?.addEventListener("change", ()=>{
+    const v = dueDate.value;
+    const nextDueTs = v ? startTsFromISO(v) : null;
+
+    // Durante criação (card ainda não existe): só guarda valor temporário
+    if (!activeCardId && overlay?.dataset?.newcol){
+      pendingNewCardDueTs = nextDueTs;
+      dueLabel.textContent = nextDueTs ? dueHuman(nextDueTs) : "Prazo";
+      if (duePill) duePill.textContent = nextDueTs ? `📅 ${dueHuman(nextDueTs)}` : "📅 Sem prazo";
+      return;
+    }
+
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
-    const v = dueDate.value;
     const before = c.dueTs;
 
     if (!v){
       c.dueTs = null;
       log(activeCardId, "Removeu o prazo do card.");
     } else {
-      const [y,m,d] = v.split("-").map(Number);
-      const ts = startOfDay(new Date(y, m-1, d));
+      const ts = nextDueTs;
       c.dueTs = ts;
       if (before !== ts) log(activeCardId, `Definiu o prazo do card para ${dueHuman(ts)} (${v}).`);
     }
 
     dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
+    if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
     save();
     render();
     renderTimeline();
   });
+
 
   // Checklist
   addTaskBtn?.addEventListener("click", ()=>{
@@ -1194,7 +1273,6 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
     archOverlay.classList.remove("open");
   }
 
-  viewArchivedBtn?.addEventListener("click", openArchivedModal);
   closeArch?.addEventListener("click", closeArchivedModal);
   archOverlay?.addEventListener("click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
   document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
