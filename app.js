@@ -594,6 +594,7 @@ function initSupabase(){
   const duePill = document.getElementById("duePill");
   const dueLabel = document.getElementById("dueLabel");
   const dueDate = document.getElementById("dueDate");
+  const dueQuick = document.getElementById("dueQuick");
   const duePop = document.getElementById("duePop");
   const duePrev = document.getElementById("duePrev");
   const dueNext = document.getElementById("dueNext");
