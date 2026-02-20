@@ -114,99 +114,168 @@ window.onerror = (msg, src, line, col, err) => {
     return s;
   }
 
-// ===================== Persistência (local + online) =====================
+// ===================== Persistência (Supabase = source of truth) =====================
 
 function localKey(userId = null){
-  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+  return userId ? `${STORAGE_KEY}:cache:${userId}` : `${STORAGE_KEY}:guest`;
 }
 
-function loadLocal(userId = null){
+function notifyPersistenceError(action, error){
+  const msg = error?.message || String(error);
+  alert(`Falha ao ${action}. Verifique a conexão e tente novamente.\n\n${msg}`);
+  console.error(`[cards] ${action}`, error);
+}
+
+function ensureCloudReady(actionLabel = "persistir card"){
+  if (!(sb && sbUser)){
+    const err = new Error("Você precisa entrar para salvar cards na nuvem.");
+    notifyPersistenceError(actionLabel, err);
+    throw err;
+  }
+}
+
+function normalizeTask(task){
+  return {
+    id: task?.id || uid(),
+    text: String(task?.text || ""),
+    done: !!task?.done
+  };
+}
+
+function normalizeTimeline(items){
+  if (!Array.isArray(items)) return [];
+  return items.map((it) => ({
+    type: it?.type === "note" ? "note" : "log",
+    ts: Number(it?.ts) || nowTs(),
+    text: String(it?.text || "")
+  }));
+}
+
+function rowToCard(row){
+  const dueTs = row?.due_date ? startTsFromISO(row.due_date) : null;
+  return {
+    id: row.id,
+    title: row.title || "",
+    details: row.details || "",
+    dueTs,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : nowTs(),
+    tasks: Array.isArray(row.checklist) ? row.checklist.map(normalizeTask) : [],
+    timeline: normalizeTimeline(row.notes)
+  };
+}
+
+function cardToPatch(card, extra = {}){
+  return {
+    title: card.title || "",
+    details: card.details || "",
+    due_date: card.dueTs ? dateISO(card.dueTs) : null,
+    checklist: Array.isArray(card.tasks) ? card.tasks.map(normalizeTask) : [],
+    notes: Array.isArray(card.timeline) ? card.timeline : [],
+    ...extra
+  };
+}
+
+function saveLocalCache(userId){
+  if (!userId) return;
+  try { localStorage.setItem(localKey(userId), JSON.stringify(state)); }
+  catch(e){ console.warn("Não foi possível atualizar cache local.", e); }
+}
+
+function loadLocalCache(userId){
+  if (!userId) return null;
   try{
     const raw = localStorage.getItem(localKey(userId));
-    if (!raw) return seedWithExamples();
-    const parsed = JSON.parse(raw);
-
-    parsed.cards ||= {};
-    parsed.columns ||= {};
-    parsed.archived ||= [];
-
-    // garantir colunas
-    for (const c of COLS) parsed.columns[c.id] ||= [];
-
-    return parsed;
+    if (!raw) return null;
+    return JSON.parse(raw);
   }catch(e){
-    return seedWithExamples();
+    console.warn("Cache local inválido.", e);
+    return null;
   }
 }
 
-async function loadOnline(){
-  if (!(sbUser && sb)) return null;
-  try{
-    const { data, error } = await sb
-      .from("boards")
-      .select("data")
-      .eq("user_id", sbUser.id)
-      .order("updated_at", { ascending:false })
-      .limit(1);
+// Data Layer Supabase: lista cards do usuário autenticado (RLS + user_id).
+async function fetchCards({ includeArchived = false } = {}){
+  ensureCloudReady("carregar cards");
+  let query = sb
+    .from("cards")
+    .select("id,title,col,position,details,due_date,archived,checklist,notes,created_at")
+    .eq("user_id", sbUser.id)
+    .order("col", { ascending:true })
+    .order("position", { ascending:true })
+    .order("created_at", { ascending:true });
 
-    if (error) return null;
-    if (Array.isArray(data) && data[0]?.data) return data[0].data;
-    return null;
-  }catch(e){
-    return null;
+  if (!includeArchived) query = query.eq("archived", false);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+async function createCardCloud(card, colId, position = 0){
+  ensureCloudReady("criar card");
+  const payload = {
+    user_id: sbUser.id,
+    ...cardToPatch(card, {
+      col: colId,
+      position,
+      archived: false
+    })
+  };
+
+  const { data, error } = await sb.from("cards").insert(payload).select("*").single();
+  if (error) throw error;
+  return data;
+}
+
+async function updateCardCloud(id, patch){
+  ensureCloudReady("atualizar card");
+  const { data, error } = await sb
+    .from("cards")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", sbUser.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function deleteCardCloud(id){
+  ensureCloudReady("excluir card");
+  const { error } = await sb.from("cards").delete().eq("id", id).eq("user_id", sbUser.id);
+  if (error) throw error;
+}
+
+async function archiveCardCloud(id, archived = true){
+  return updateCardCloud(id, { archived });
+}
+
+function stateFromRows(rows){
+  const next = seed();
+  for (const row of rows){
+    const card = rowToCard(row);
+    next.cards[card.id] = card;
+    if (row.archived) next.archived.push(card.id);
+    else (next.columns[row.col] || next.columns.todo).push(card.id);
   }
+  return next;
 }
 
 async function load(){
-  // logado: prioriza online; fallback para cache local da própria conta
-  if (sbUser && sb){
-    const online = await loadOnline();
-    if (online){
-      try { localStorage.setItem(localKey(sbUser.id), JSON.stringify(online)); } catch(e){}
-      return online;
-    }
-    return loadLocal(sbUser.id);
-  }
-  return loadLocal();
-}
-
-function saveLocal(userId = null){
+  if (!(sbUser && sb)) return seed();
   try{
-    localStorage.setItem(localKey(userId), JSON.stringify(state));
-  }catch(e){}
-}
-
-async function saveOnline(){
-  if (!(sbUser && sb)) return;
-  try{
-    await sb
-      .from("boards")
-      .upsert({
-        user_id: sbUser.id,
-        data: state,
-        updated_at: new Date().toISOString()
-      }, { onConflict: "user_id" });
-  }catch(e){}
-}
-
-// salva sem travar o app (debounce)
-let _saveT = null;
-function saveSoon(){
-  clearTimeout(_saveT);
-  _saveT = setTimeout(() => { save(); }, 350);
-}
-
-function save(){
-  // se estiver logado → salva online; senão salva local
-  if (sbUser && sb){
-    saveOnline();
-    saveLocal(sbUser.id);
-  }else{
-    saveLocal();
+    const rows = await fetchCards({ includeArchived: true });
+    const nextState = stateFromRows(rows);
+    try { localStorage.setItem(localKey(sbUser.id), JSON.stringify(nextState)); } catch(e){}
+    return nextState;
+  }catch(e){
+    const cached = loadLocalCache(sbUser.id);
+    if (cached) return cached;
+    throw e;
   }
 }
 
-let state = loadLocal();
+let state = seed();
 
 
   // ✅ sanitiza para nunca quebrar por id órfão
@@ -250,23 +319,39 @@ let state = loadLocal();
     }
   }
 
-  function log(cardId, text){
+  // Sincroniza um card do state em memória para o Supabase (fonte da verdade).
+  async function persistCardSnapshot(cardId, actionLabel){
+    const c = state.cards[cardId];
+    if (!c) return;
+    const col = findCardColumn(cardId) || "todo";
+    const position = state.columns[col]?.indexOf(cardId);
+    try{
+      await updateCardCloud(cardId, cardToPatch(c, { col, position: position < 0 ? 0 : position }));
+      saveLocalCache(sbUser?.id);
+    }catch(e){
+      notifyPersistenceError(actionLabel, e);
+      throw e;
+    }
+  }
+
+  async function log(cardId, text){
     const c = state.cards[cardId];
     if (!c) return;
     c.timeline.unshift({ type:"log", ts: nowTs(), text });
-    save();
+    await persistCardSnapshot(cardId, "registrar alteração no card");
   }
-  function note(cardId, text){
+
+  async function note(cardId, text){
     const c = state.cards[cardId];
     if (!c) return;
     c.timeline.unshift({ type:"note", ts: nowTs(), text });
-    save();
+    await persistCardSnapshot(cardId, "salvar nota");
   }
 
-  function createCard(title, colId, dueTs = null){
-    const id = uid();
+  async function createCard(title, colId, dueTs = null){
+    const id = crypto?.randomUUID?.() || uid();
     const due = dueTs ?? null;
-    state.cards[id] = {
+    const nextCard = {
       id,
       title,
       details:"",
@@ -279,10 +364,20 @@ let state = loadLocal();
         ...(due ? [{ type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(due)}.` }] : []),
       ]
     };
-    state.columns[colId].unshift(id);
-    save();
-    render();
-    return id;
+
+    const position = 0;
+    try{
+      const inserted = await createCardCloud(nextCard, colId, position);
+      const savedId = inserted.id || id;
+      state.cards[savedId] = rowToCard(inserted);
+      state.columns[colId].unshift(savedId);
+      render();
+      saveLocalCache(sbUser?.id);
+      return savedId;
+    }catch(e){
+      notifyPersistenceError("criar card", e);
+      return null;
+    }
   }
 
   function structuredCloneSafe(obj){
@@ -290,15 +385,14 @@ let state = loadLocal();
     catch { return JSON.parse(JSON.stringify(obj)); }
   }
 
-  function duplicateCard(cardId){
+  async function duplicateCard(cardId){
     const c = state.cards[cardId];
     if (!c) return;
     const colId = findCardColumn(cardId) || "todo";
-    const id = uid();
 
-    state.cards[id] = {
+    const duplicated = {
       ...structuredCloneSafe(c),
-      id,
+      id: crypto?.randomUUID?.() || uid(),
       title: c.title + " (cópia)",
       createdAt: nowTs(),
       timeline: [
@@ -306,57 +400,85 @@ let state = loadLocal();
         { type:"log", ts: nowTs(), text:`Adicionou o card na coluna ${colName(colId)}.` },
       ]
     };
-    state.columns[colId].unshift(id);
-    save();
-    render();
+
+    try{
+      const inserted = await createCardCloud(duplicated, colId, 0);
+      const savedId = inserted.id || duplicated.id;
+      state.cards[savedId] = rowToCard(inserted);
+      state.columns[colId].unshift(savedId);
+      render();
+      saveLocalCache(sbUser?.id);
+    }catch(e){
+      notifyPersistenceError("duplicar card", e);
+    }
   }
 
-  function archiveCard(cardId){
+  async function archiveCard(cardId){
     const c = state.cards[cardId];
     if (!c) return;
     const from = findCardColumn(cardId);
 
-    removeFromAllColumns(cardId);
-    if (!state.archived.includes(cardId)) state.archived.unshift(cardId);
-
-    log(cardId, `Arquivou o card${from ? ` (veio de ${colName(from)})` : ""}.`);
-    save();
-    render();
+    c.timeline.unshift({ type:"log", ts: nowTs(), text:`Arquivou o card${from ? ` (veio de ${colName(from)})` : ""}.` });
+    try{
+      await archiveCardCloud(cardId, true);
+      removeFromAllColumns(cardId);
+      state.archived = [cardId, ...state.archived.filter(id => id !== cardId)];
+      render();
+      saveLocalCache(sbUser?.id);
+    }catch(e){
+      notifyPersistenceError("arquivar card", e);
+    }
   }
 
-  function restoreCard(cardId, toCol="todo"){
+  async function restoreCard(cardId, toCol="todo"){
     const c = state.cards[cardId];
     if (!c) return;
 
-    state.archived = state.archived.filter(id => id !== cardId);
-    state.columns[toCol].unshift(cardId);
-    log(cardId, `Restaurou o card para ${colName(toCol)}.`);
-    save();
-    render();
+    c.timeline.unshift({ type:"log", ts: nowTs(), text:`Restaurou o card para ${colName(toCol)}.` });
+    try{
+      await updateCardCloud(cardId, cardToPatch(c, { archived:false, col: toCol, position:0 }));
+      state.archived = state.archived.filter(id => id !== cardId);
+      state.columns[toCol] = [cardId, ...state.columns[toCol].filter(id => id !== cardId)];
+      render();
+      saveLocalCache(sbUser?.id);
+    }catch(e){
+      notifyPersistenceError("restaurar card", e);
+    }
   }
 
-  function deleteCard(cardId){
-    removeFromAllColumns(cardId);
-    state.archived = state.archived.filter(id => id !== cardId);
-    delete state.cards[cardId];
-    save();
-    render();
+  async function deleteCard(cardId){
+    try{
+      await deleteCardCloud(cardId);
+      removeFromAllColumns(cardId);
+      state.archived = state.archived.filter(id => id !== cardId);
+      delete state.cards[cardId];
+      render();
+      saveLocalCache(sbUser?.id);
+    }catch(e){
+      notifyPersistenceError("excluir card", e);
+    }
   }
 
-  function moveCard(cardId, toCol){
+  async function moveCard(cardId, toCol){
     const from = findCardColumn(cardId);
     if (!from || from === toCol) return;
 
-    const idx = state.columns[from].indexOf(cardId);
-    if (idx >= 0) state.columns[from].splice(idx, 1);
-    state.columns[toCol].unshift(cardId);
+    const c = state.cards[cardId];
+    c.timeline.unshift({ type:"log", ts: nowTs(), text:`Moveu o card de ${colName(from)} → ${colName(toCol)}.` });
 
-    log(cardId, `Moveu o card de ${colName(from)} → ${colName(toCol)}.`);
-    save();
-    render();
+    try{
+      await updateCardCloud(cardId, cardToPatch(c, { col: toCol, position:0, archived:false }));
+      const idx = state.columns[from].indexOf(cardId);
+      if (idx >= 0) state.columns[from].splice(idx, 1);
+      state.columns[toCol].unshift(cardId);
+      render();
+      saveLocalCache(sbUser?.id);
 
-    if (activeCardId === cardId){
-      document.getElementById("cardWhere").textContent = `Na coluna: ${colName(toCol)}`;
+      if (activeCardId === cardId){
+        document.getElementById("cardWhere").textContent = `Na coluna: ${colName(toCol)}`;
+      }
+    }catch(e){
+      notifyPersistenceError("mover card", e);
     }
   }
 
@@ -434,6 +556,13 @@ function ensureSb(){
   return sb;
 }
 
+function clearInMemoryState(){
+  state = seed();
+  activeCardId = null;
+  pendingNewCardDueTs = null;
+  if (overlay) overlay.classList.remove("open");
+}
+
 async function doPostLogin(){
   const { data, error } = await sb.auth.getSession();
   if (error) throw error;
@@ -444,9 +573,16 @@ async function doPostLogin(){
   setGateUI?.();
 
   if (sbUser){
-    state = await load();
-    sanitizeState?.();
-    render();
+    try{
+      state = await load();
+      sanitizeState?.();
+      render();
+    }catch(e){
+      notifyPersistenceError("carregar cards", e);
+      clearInMemoryState();
+    }
+  } else {
+    clearInMemoryState();
   }
 }
 
@@ -539,6 +675,7 @@ authBtn?.addEventListener("click", async ()=>{
     if (sbUser){
       await sb.auth.signOut();
       sbUser = null;
+      clearInMemoryState();
       setAuthUI();
       setGateUI();
     } else {
@@ -563,9 +700,16 @@ function initSupabase(){
       setAuthUI();
       setGateUI();
       if (sbUser){
-        state = await load();
-        sanitizeState?.();
-        render();
+        try{
+          state = await load();
+          sanitizeState?.();
+          render();
+        }catch(e){
+          notifyPersistenceError("recarregar cards", e);
+          clearInMemoryState();
+        }
+      } else {
+        clearInMemoryState();
       }
     });
 
@@ -625,6 +769,22 @@ function initSupabase(){
   let activeCardId = null;
   let activeTab = "all";
   let pendingNewCardDueTs = null;
+  const cardPatchTimers = new Map();
+
+  function scheduleCardPatch(cardId, buildPatch, actionLabel, delay = 450){
+    clearTimeout(cardPatchTimers.get(cardId));
+    const timer = setTimeout(async ()=>{
+      try{
+        const patch = buildPatch();
+        if (!patch) return;
+        await updateCardCloud(cardId, patch);
+        saveLocalCache(sbUser?.id);
+      }catch(e){
+        notifyPersistenceError(actionLabel, e);
+      }
+    }, delay);
+    cardPatchTimers.set(cardId, timer);
+  }
 
   // Menus
   function closeAllMenus(){
@@ -815,7 +975,7 @@ list?.addEventListener("drop", (e) => {
     updateArchivedSidebar();
   }
 
-function onDropToColumn(e, toCol){
+async function onDropToColumn(e, toCol){
   e.preventDefault();
 
   try{
@@ -823,17 +983,14 @@ function onDropToColumn(e, toCol){
     const { cardId, from } = payload;
     if (!cardId || !from) return;
 
-    // remove da coluna antiga
     const fromIdx = state.columns[from].indexOf(cardId);
     if (fromIdx >= 0) state.columns[from].splice(fromIdx, 1);
     state.columns[toCol] = state.columns[toCol].filter(id => id !== cardId);
 
-    // encontra onde soltar baseado na posição do mouse
     const columnEl = document.querySelector(`[data-col="${toCol}"] .cards`);
     const cards = [...columnEl.querySelectorAll(".card")];
 
     let inserted = false;
-
     for (const cardEl of cards){
       const rect = cardEl.getBoundingClientRect();
       if (e.clientY < rect.top + rect.height / 2){
@@ -845,15 +1002,18 @@ function onDropToColumn(e, toCol){
       }
     }
 
-    if (!inserted){
-      state.columns[toCol].push(cardId);
-    }
+    if (!inserted) state.columns[toCol].push(cardId);
 
-    log(cardId, `Moveu o card para ${colName(toCol)}.`);
-    save();
+    const c = state.cards[cardId];
+    c.timeline.unshift({ type:"log", ts: nowTs(), text:`Moveu o card para ${colName(toCol)}.` });
+    const position = state.columns[toCol].indexOf(cardId);
+    await updateCardCloud(cardId, cardToPatch(c, { col: toCol, position, archived:false }));
+
     render();
-
-  }catch{}
+    saveLocalCache(sbUser?.id);
+  }catch(err){
+    notifyPersistenceError("mover card", err);
+  }
 }
 
   // Card modal
@@ -897,7 +1057,7 @@ overlay.classList.add("open");
 
   }
 
-function closeCard(){
+async function closeCard(){
 
   // se estava criando um novo card
   if (!activeCardId && overlay.dataset.newcol){
@@ -905,7 +1065,7 @@ function closeCard(){
 
     if (title) {
       const colId = overlay.dataset.newcol;
-      createCard(title, colId, pendingNewCardDueTs);
+      await createCard(title, colId, pendingNewCardDueTs);
     }
 
     delete overlay.dataset.newcol;
@@ -922,15 +1082,30 @@ function closeCard(){
   overlay?.addEventListener("click", (e)=>{ if (e.target === overlay) closeCard(); });
   document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
 
-  saveDetailsBtn?.addEventListener("click", ()=>{
+  saveDetailsBtn?.addEventListener("click", async ()=>{
     if (!activeCardId) return;
     const c = state.cards[activeCardId];
     const prev = c.details || "";
     const next = details.value || "";
     c.details = next;
-    if (prev !== next) log(activeCardId, "Atualizou os detalhes do card.");
-    save();
+    if (prev !== next) c.timeline.unshift({ type:"log", ts: nowTs(), text:"Atualizou os detalhes do card." });
+    await persistCardSnapshot(activeCardId, "salvar detalhes do card");
     render();
+  });
+
+  modalTitle?.addEventListener("input", ()=>{
+    if (!activeCardId) return;
+    const c = state.cards[activeCardId];
+    c.title = modalTitle.value;
+    scheduleCardPatch(activeCardId, () => cardToPatch(c), "salvar título do card", 500);
+    render();
+  });
+
+  details?.addEventListener("input", ()=>{
+    if (!activeCardId) return;
+    const c = state.cards[activeCardId];
+    c.details = details.value;
+    scheduleCardPatch(activeCardId, () => cardToPatch(c), "salvar detalhes do card", 700);
   });
 
   archiveFromModalBtn?.addEventListener("click", ()=>{
@@ -959,11 +1134,11 @@ function closeCard(){
   });
 
   // Notes
-  addNoteBtn?.addEventListener("click", ()=>{
+  addNoteBtn?.addEventListener("click", async ()=>{
     if (!activeCardId) return;
     const t = newNote.value.trim();
     if (!t) return;
-    note(activeCardId, t);
+    await note(activeCardId, t);
     newNote.value = "";
     renderTimeline();
   });
@@ -1134,7 +1309,7 @@ document.addEventListener("click", () => {
 });
 duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
-  dueDate?.addEventListener("change", ()=>{
+  dueDate?.addEventListener("change", async ()=>{
     const v = dueDate.value;
     const nextDueTs = v ? startTsFromISO(v) : null;
 
@@ -1152,31 +1327,31 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
 
     if (!v){
       c.dueTs = null;
-      log(activeCardId, "Removeu o prazo do card.");
+      c.timeline.unshift({ type:"log", ts: nowTs(), text:"Removeu o prazo do card." });
     } else {
       const ts = nextDueTs;
       c.dueTs = ts;
-      if (before !== ts) log(activeCardId, `Definiu o prazo do card para ${dueHuman(ts)} (${v}).`);
+      if (before !== ts) c.timeline.unshift({ type:"log", ts: nowTs(), text:`Definiu o prazo do card para ${dueHuman(ts)} (${v}).` });
     }
 
     dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
     if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
-    save();
+    await persistCardSnapshot(activeCardId, "salvar prazo do card");
     render();
     renderTimeline();
   });
 
 
   // Checklist
-  addTaskBtn?.addEventListener("click", ()=>{
+  addTaskBtn?.addEventListener("click", async ()=>{
     if (!activeCardId) return;
     const t = newTask.value.trim();
     if (!t) return;
     const c = state.cards[activeCardId];
     c.tasks.push({ id: uid(), text: t, done:false });
-    log(activeCardId, "Adicionou uma tarefa no checklist.");
+    c.timeline.unshift({ type:"log", ts: nowTs(), text:"Adicionou uma tarefa no checklist." });
     newTask.value = "";
-    save();
+    await persistCardSnapshot(activeCardId, "salvar checklist");
     renderTasks();
     renderTimeline();
   });
@@ -1208,20 +1383,20 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
       `;
 
       const cb = row.querySelector("input");
-      cb?.addEventListener("change", ()=>{
+      cb?.addEventListener("change", async ()=>{
         t.done = cb.checked;
-        log(activeCardId, t.done ? "Concluiu uma tarefa do checklist." : "Reabriu uma tarefa do checklist.");
-        save();
+        c.timeline.unshift({ type:"log", ts: nowTs(), text: t.done ? "Concluiu uma tarefa do checklist." : "Reabriu uma tarefa do checklist." });
+        await persistCardSnapshot(activeCardId, "atualizar checklist");
         renderTasks();
         renderTimeline();
       });
 
       const del = row.querySelector("button");
-      del?.addEventListener("click", ()=>{
+      del?.addEventListener("click", async ()=>{
         if (!confirm("Excluir esta tarefa?")) return;
         c.tasks = c.tasks.filter(x=>x.id!==t.id);
-        log(activeCardId, "Excluiu uma tarefa do checklist.");
-        save();
+        c.timeline.unshift({ type:"log", ts: nowTs(), text:"Excluiu uma tarefa do checklist." });
+        await persistCardSnapshot(activeCardId, "remover item do checklist");
         renderTasks();
         renderTimeline();
       });
@@ -1278,14 +1453,12 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
   archOverlay?.addEventListener("click", (e)=>{ if (e.target === archOverlay) closeArchivedModal(); });
   document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && archOverlay.classList.contains("open")) closeArchivedModal(); });
 
-  clearArchivedBtn?.addEventListener("click", ()=>{
+  clearArchivedBtn?.addEventListener("click", async ()=>{
     if (!state.archived.length) return;
     if (!confirm("Limpar todos os arquivados? (eles serão EXCLUÍDOS)")) return;
     for (const id of [...state.archived]){
-      delete state.cards[id];
+      await deleteCard(id);
     }
-    state.archived = [];
-    save();
     renderArchivedList();
   });
 
@@ -1316,22 +1489,22 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
         </div>
       `;
 
-      item.querySelector('[data-act="restore"]')?.addEventListener("click", ()=>{
-        restoreCard(id, "todo");
+      item.querySelector('[data-act="restore"]')?.addEventListener("click", async ()=>{
+        await restoreCard(id, "todo");
         renderArchivedList();
       });
 
-      item.querySelector('[data-act="open"]')?.addEventListener("click", ()=>{
+      item.querySelector('[data-act="open"]')?.addEventListener("click", async ()=>{
         // abre o card restaurando em todo
-        restoreCard(id, "todo");
+        await restoreCard(id, "todo");
         renderArchivedList();
         closeArchivedModal();
         openCard(id, "todo");
       });
 
-      item.querySelector('[data-act="del"]')?.addEventListener("click", ()=>{
+      item.querySelector('[data-act="del"]')?.addEventListener("click", async ()=>{
         if (!confirm("Excluir esse card arquivado?")) return;
-        deleteCard(id);
+        await deleteCard(id);
         renderArchivedList();
       });
 
