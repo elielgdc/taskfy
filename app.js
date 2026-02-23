@@ -1068,10 +1068,10 @@ async function onDropToColumn(e, toCol){
 
   function closeCardOverlay(){
     if (!overlay) return;
+    closeDuePop();
     overlay.classList.remove("open");
     overlay.style.display = "none";
     overlay.style.pointerEvents = "none";
-    closeDuePop();
     resetCardModalState();
   }
 
@@ -1137,8 +1137,23 @@ async function onDropToColumn(e, toCol){
 
   closeModal?.addEventListener("click", closeCard);
   document.getElementById("createCardBtn")?.addEventListener("click", closeCard);
-  overlay?.addEventListener("click", (e)=>{ if (e.target === overlay) closeCard(); });
-  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && overlay?.classList.contains("open")) closeCard(); });
+  overlay?.addEventListener("click", (e)=>{
+    if (e.target !== overlay) return;
+    if (duePop?.classList.contains("open")){
+      closeDuePop();
+      return;
+    }
+    closeCard();
+  });
+  document.addEventListener("keydown", (e)=>{
+    if (e.key !== "Escape") return;
+    if (duePop?.classList.contains("open")){
+      e.preventDefault();
+      closeDuePop();
+      return;
+    }
+    if (overlay?.classList.contains("open")) closeCard();
+  });
 
   saveDetailsBtn?.addEventListener("click", async ()=>{
     if (!activeCardId) return;
@@ -1209,6 +1224,9 @@ async function onDropToColumn(e, toCol){
 
 // ===== Mini calendário do Prazo =====
 let dueView = new Date(); // mês que o popup está mostrando
+let duePopOutsideHandler = null;
+let duePopEscHandler = null;
+let duePopFocusReturnEl = null;
 
 function pad2(n){ return String(n).padStart(2,"0"); }
 function isoFromDate(dt){
@@ -1223,17 +1241,67 @@ function monthLabel(dt){
   return `${names[dt.getMonth()]} ${dt.getFullYear()}`;
 }
 
-function openDuePop(){
+function openDuePop(anchorEl = duePill){
   if (!duePop) return;
+  if (!overlay?.classList.contains("open")) openCardOverlay();
+
+  duePopFocusReturnEl = anchorEl || document.activeElement || duePill || document.body;
+  duePop.style.display = "block";
   duePop.classList.add("open");
   duePop.setAttribute("aria-hidden","false");
   renderDuePop();
+
+  if (!duePopOutsideHandler){
+    duePopOutsideHandler = (ev) => {
+      if (!duePop?.classList.contains("open")) return;
+      const target = ev.target;
+      if (duePop.contains(target)) return;
+      if (anchorEl && anchorEl.contains?.(target)) return;
+      closeDuePop();
+    };
+    document.addEventListener("pointerdown", duePopOutsideHandler, true);
+  }
+
+  if (!duePopEscHandler){
+    duePopEscHandler = (ev) => {
+      if (ev.key !== "Escape") return;
+      if (!duePop?.classList.contains("open")) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      closeDuePop();
+    };
+    document.addEventListener("keydown", duePopEscHandler, true);
+  }
 }
 
 function closeDuePop(){
   if (!duePop) return;
+
+  if (duePopOutsideHandler){
+    document.removeEventListener("pointerdown", duePopOutsideHandler, true);
+    duePopOutsideHandler = null;
+  }
+  if (duePopEscHandler){
+    document.removeEventListener("keydown", duePopEscHandler, true);
+    duePopEscHandler = null;
+  }
+
+  const focused = document.activeElement;
+  if (focused && duePop.contains(focused) && typeof focused.blur === "function"){
+    focused.blur();
+  }
+
   duePop.classList.remove("open");
+  duePop.style.display = "none";
   duePop.setAttribute("aria-hidden","true");
+
+  const focusTarget = duePopFocusReturnEl;
+  duePopFocusReturnEl = null;
+  if (focusTarget && document.contains(focusTarget) && typeof focusTarget.focus === "function"){
+    focusTarget.focus({ preventScroll: true });
+  } else {
+    document.body?.focus?.();
+  }
 }
 
 function renderDuePop(){
@@ -1301,7 +1369,7 @@ duePill?.addEventListener("click", (e)=>{
   }
 
   if (duePop.classList.contains("open")) closeDuePop();
-  else openDuePop();
+  else openDuePop(duePill);
 });
 
 // navegar meses
@@ -1361,10 +1429,6 @@ dueApplyBtn?.addEventListener("click", (e)=>{
   closeDuePop();
 });
 
-// clicar fora fecha
-document.addEventListener("click", () => {
-  if (duePop?.classList.contains("open")) closeDuePop();
-});
 duePop?.addEventListener("click", (e)=> e.stopPropagation());
   
   dueDate?.addEventListener("change", async ()=>{
