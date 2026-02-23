@@ -228,7 +228,7 @@
     .card:hover{border-color:rgba(147,197,253,.35)}
     .card.dragging{opacity:.7}
 
-    .card-top{display:flex;align-items:center;gap:8px}
+    .card-top{display:flex;align-items:flex-start;gap:8px}
     .avatar{
         width:26px;
  	height:26px;
@@ -246,9 +246,8 @@
       line-height:1.25;
       flex:1;
       min-width:0;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      white-space:normal;
+      overflow-wrap:anywhere;
     }
     .kebab{
       width:30px;height:30px;border-radius:10px;
