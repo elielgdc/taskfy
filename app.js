@@ -271,7 +271,8 @@ async function load(){
   }catch(e){
     const cached = loadLocalCache(sbUser.id);
     if (cached) return cached;
-    throw e;
+    console.warn("Falha ao buscar cards na nuvem e sem cache local. Exibindo quadro vazio.", e);
+    return seed();
   }
 }
 
@@ -569,9 +570,6 @@ async function doPostLogin(){
 
   sbUser = data?.session?.user || null;
 
-  setAuthUI?.();
-  setGateUI?.();
-
   if (sbUser){
     try{
       state = await load();
@@ -580,10 +578,15 @@ async function doPostLogin(){
     }catch(e){
       notifyPersistenceError("carregar cards", e);
       clearInMemoryState();
+      render();
     }
   } else {
     clearInMemoryState();
+    render();
   }
+
+  setAuthUI?.();
+  setGateUI?.();
 }
 
 let loggingIn = false;
@@ -615,13 +618,26 @@ loginBtn?.addEventListener("click", async () => {
     if (!email || !pass) throw new Error("Preencha email e senha.");
 
     const res = await signInWithPassword(email, pass);
+    sbUser = res?.user || res?.session?.user || null;
 
-    // se logou, atualiza tudo na marra (sem depender de evento)
-    
-    await doPostLogin();
+    if (!sbUser){
+      await doPostLogin();
+    } else {
+      try{
+        state = await load();
+        sanitizeState?.();
+      }catch(e){
+        notifyPersistenceError("carregar cards", e);
+        clearInMemoryState();
+      }
+      render();
+      setAuthUI();
+      setGateUI();
+    }
 
-    // se ainda assim não tiver user, explica
-    if (!sbUser) throw new Error("Login não retornou usuário. Se sua conta exige confirmação de e-mail, confirme primeiro.");
+    if (!sbUser) {
+      alert("Não foi possível confirmar a sessão de login. Verifique email/senha e, se necessário, confirme seu e-mail.");
+    }
   }catch(e){
     alert("Erro ao entrar: " + (e?.message || String(e)));
   }finally{
@@ -695,22 +711,30 @@ function initSupabase(){
     doPostLogin();
 
     // reage a mudanças de sessão
-    sb.auth.onAuthStateChange(async (_event, session)=>{
+    sb.auth.onAuthStateChange(async (event, session)=>{
       sbUser = session?.user || null;
-      setAuthUI();
-      setGateUI();
+
+      if (event === "TOKEN_REFRESHED"){
+        setAuthUI();
+        setGateUI();
+        return;
+      }
+
       if (sbUser){
         try{
           state = await load();
           sanitizeState?.();
-          render();
         }catch(e){
           notifyPersistenceError("recarregar cards", e);
           clearInMemoryState();
         }
+        render();
       } else {
         clearInMemoryState();
+        render();
       }
+      setAuthUI();
+      setGateUI();
     });
 
     setAuthUI();
