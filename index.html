@@ -398,12 +398,16 @@
       position:fixed;inset:0;
       background:rgba(2,6,23,.72);
       display:none;
+      pointer-events:none;
       align-items:flex-start;
       justify-content:center;
       padding:22px;
       z-index:50;
     }
-    .overlay.open{display:flex}
+    .overlay.open{
+      display:flex;
+      pointer-events:auto;
+    }
 
     .modal{
       width:min(880px, 92vw);

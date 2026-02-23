@@ -561,7 +561,14 @@ function clearInMemoryState(){
   state = seed();
   activeCardId = null;
   pendingNewCardDueTs = null;
-  if (overlay) overlay.classList.remove("open");
+
+  const cardOverlay = document.getElementById("overlay");
+  if (cardOverlay){
+    cardOverlay.classList.remove("open");
+    cardOverlay.style.display = "none";
+    cardOverlay.style.pointerEvents = "none";
+    if (cardOverlay.dataset?.newcol) delete cardOverlay.dataset.newcol;
+  }
 }
 
 async function doPostLogin(){
@@ -794,6 +801,7 @@ function initSupabase(){
   let activeCardId = null;
   let activeTab = "all";
   let pendingNewCardDueTs = null;
+  let closingCard = false;
   const cardPatchTimers = new Map();
 
   function scheduleCardPatch(cardId, buildPatch, actionLabel, delay = 450){
@@ -1043,69 +1051,94 @@ async function onDropToColumn(e, toCol){
 
   // Card modal
 
+  function openCardOverlay(){
+    if (!overlay) return;
+    overlay.classList.add("open");
+    overlay.style.display = "flex";
+    overlay.style.pointerEvents = "auto";
+  }
+
+  function resetCardModalState(){
+    activeCardId = null;
+    pendingNewCardDueTs = null;
+    if (overlay?.dataset?.newcol) delete overlay.dataset.newcol;
+    if (newNote) newNote.value = "";
+    if (newTask) newTask.value = "";
+  }
+
+  function closeCardOverlay(){
+    if (!overlay) return;
+    overlay.classList.remove("open");
+    overlay.style.display = "none";
+    overlay.style.pointerEvents = "none";
+    closeDuePop();
+    resetCardModalState();
+  }
+
   function openCard(cardId, colId){
     activeCardId = cardId;
     activeTab = "all";
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
     document.querySelector('.tab[data-tab="all"]')?.classList.add("active");
 
-// NOVO CARD (ainda não existe)
-if (!cardId){
-  modalTitle.value = "";
-  details.value = "";
-  cardWhere.textContent = `Na coluna: ${colName(colId)}`;
-  pendingNewCardDueTs = null;
+    // NOVO CARD (ainda não existe)
+    if (!cardId){
+      if (modalTitle) modalTitle.value = "";
+      if (details) details.value = "";
+      if (cardWhere) cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+      pendingNewCardDueTs = null;
 
-  dueLabel.textContent = "Prazo";
-  if (duePill) duePill.textContent = "📅 Sem prazo";
-  if (dueDate) dueDate.value = "";
+      if (dueLabel) dueLabel.textContent = "Prazo";
+      if (duePill) duePill.textContent = "📅 Sem prazo";
+      if (dueDate) dueDate.value = "";
 
-  overlay.dataset.newcol = colId;
-  overlay.classList.add("open");
-  return;
-}
-
-// CARD EXISTENTE
-const c = state.cards[cardId];
-modalTitle.value = c.title || "";
-details.value = c.details || "";
-cardWhere.textContent = `Na coluna: ${colName(colId)}`;
-
-dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
-if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
-if (dueDate) dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
-
-renderTimeline();
-renderTasks();
-
-overlay.classList.add("open");
-
-  }
-
-async function closeCard(){
-
-  // se estava criando um novo card
-  if (!activeCardId && overlay.dataset.newcol){
-    const title = modalTitle.value.trim();
-
-    if (title) {
-      const colId = overlay.dataset.newcol;
-      await createCard(title, colId, pendingNewCardDueTs);
+      overlay.dataset.newcol = colId;
+      openCardOverlay();
+      return;
     }
 
-    delete overlay.dataset.newcol;
+    // CARD EXISTENTE
+    const c = state.cards[cardId];
+    if (!c) return;
+    if (modalTitle) modalTitle.value = c.title || "";
+    if (details) details.value = c.details || "";
+    if (cardWhere) cardWhere.textContent = `Na coluna: ${colName(colId)}`;
+
+    if (dueLabel) dueLabel.textContent = c.dueTs ? dueHuman(c.dueTs) : "Prazo";
+    if (duePill) duePill.textContent = c.dueTs ? `📅 ${dueHuman(c.dueTs)}` : "📅 Sem prazo";
+    if (dueDate) dueDate.value = c.dueTs ? dateISO(c.dueTs) : "";
+
+    renderTimeline();
+    renderTasks();
+    openCardOverlay();
   }
 
-  overlay.classList.remove("open");
-  activeCardId = null;
-  pendingNewCardDueTs = null;
-  newNote.value = "";
-  newTask.value = "";
-}
+  async function closeCard(){
+    if (closingCard) return;
+    closingCard = true;
+
+    const isCreating = !activeCardId && !!overlay?.dataset?.newcol;
+    const colId = overlay?.dataset?.newcol || null;
+    const title = (modalTitle?.value || "").trim();
+    const dueTs = pendingNewCardDueTs;
+
+    // Fecha imediatamente para não travar interação se create/sync demorar ou falhar.
+    // O try/finally garante que o guard de fechamento sempre é liberado.
+    closeCardOverlay();
+
+    try{
+      if (isCreating && title && colId){
+        await createCard(title, colId, dueTs);
+      }
+    }finally{
+      closingCard = false;
+    }
+  }
 
   closeModal?.addEventListener("click", closeCard);
+  document.getElementById("createCardBtn")?.addEventListener("click", closeCard);
   overlay?.addEventListener("click", (e)=>{ if (e.target === overlay) closeCard(); });
-  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && overlay.classList.contains("open")) closeCard(); });
+  document.addEventListener("keydown", (e)=>{ if (e.key === "Escape" && overlay?.classList.contains("open")) closeCard(); });
 
   saveDetailsBtn?.addEventListener("click", async ()=>{
     if (!activeCardId) return;
@@ -1536,8 +1569,6 @@ duePop?.addEventListener("click", (e)=> e.stopPropagation());
       archList.appendChild(item);
     }
   }
-
-document.getElementById("createCardBtn")?.addEventListener("click", closeCard);
 
 
 // Start
