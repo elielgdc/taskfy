@@ -727,6 +727,7 @@ function initSupabase(){
         }catch(e){
           notifyPersistenceError("recarregar cards", e);
           clearInMemoryState();
+          render();
         }
         render();
       } else {
