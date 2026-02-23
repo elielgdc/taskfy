@@ -1545,5 +1545,19 @@ document.getElementById("createCardBtn")?.addEventListener("click", closeCard);
   setGateUI();
   initSupabase();
   // (render acontece após login, dentro do initSupabase)
+// ===== DEBUG TASKFY =====
+window.__TASKFY_DEBUG__ = () => {
+  const el = (sel) => document.querySelector(sel);
+
+  return {
+    logged: window.logged,
+    sbUser: window.sbUser,
+    saving: window.saving || window.isSaving,
+    dragging: window.dragging || window.isDragging,
+    modalOpen: !!el(".modal, .drawer, .dialog, .overlay, .backdrop"),
+    topEl: document.elementFromPoint(window.innerWidth/2, window.innerHeight/2),
+  };
+};
+// =========================
 
 })();
