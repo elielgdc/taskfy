@@ -618,22 +618,25 @@ loginBtn?.addEventListener("click", async () => {
     if (!email || !pass) throw new Error("Preencha email e senha.");
 
     const res = await signInWithPassword(email, pass);
+    sbUser = res?.user || res?.session?.user || null;
 
-    // aplica usuário retornado imediatamente quando disponível
-    if (res?.user) sbUser = res.user;
-
-    // sincroniza sessão/UI sem depender apenas do evento assíncrono
-    await doPostLogin();
-
-    // fallback: em alguns ambientes a sessão pode demorar milissegundos para propagar
     if (!sbUser){
-      await new Promise(r => setTimeout(r, 250));
       await doPostLogin();
+    } else {
+      try{
+        state = await load();
+        sanitizeState?.();
+      }catch(e){
+        notifyPersistenceError("carregar cards", e);
+        clearInMemoryState();
+      }
+      render();
+      setAuthUI();
+      setGateUI();
     }
 
-    // se ainda assim não houver sessão, informa sem travar o fluxo
-    if (!sbUser){
-      alert("Login concluído, mas não foi possível confirmar a sessão agora. Se sua conta exige confirmação de e-mail, confirme primeiro e tente novamente.");
+    if (!sbUser) {
+      alert("Não foi possível confirmar a sessão de login. Verifique email/senha e, se necessário, confirme seu e-mail.");
     }
   }catch(e){
     alert("Erro ao entrar: " + (e?.message || String(e)));
@@ -708,18 +711,25 @@ function initSupabase(){
     doPostLogin();
 
     // reage a mudanças de sessão
-    sb.auth.onAuthStateChange(async (_event, session)=>{
+    sb.auth.onAuthStateChange(async (event, session)=>{
       sbUser = session?.user || null;
+
+      if (event === "TOKEN_REFRESHED"){
+        setAuthUI();
+        setGateUI();
+        return;
+      }
+
       if (sbUser){
         try{
           state = await load();
           sanitizeState?.();
-          render();
         }catch(e){
           notifyPersistenceError("recarregar cards", e);
           clearInMemoryState();
           render();
         }
+        render();
       } else {
         clearInMemoryState();
         render();
