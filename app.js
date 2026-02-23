@@ -271,7 +271,8 @@ async function load(){
   }catch(e){
     const cached = loadLocalCache(sbUser.id);
     if (cached) return cached;
-    throw e;
+    console.warn("Falha ao buscar cards na nuvem e sem cache local. Exibindo quadro vazio.", e);
+    return seed();
   }
 }
 
@@ -569,9 +570,6 @@ async function doPostLogin(){
 
   sbUser = data?.session?.user || null;
 
-  setAuthUI?.();
-  setGateUI?.();
-
   if (sbUser){
     try{
       state = await load();
@@ -580,10 +578,16 @@ async function doPostLogin(){
     }catch(e){
       notifyPersistenceError("carregar cards", e);
       clearInMemoryState();
+      sbUser = null;
+      render();
     }
   } else {
     clearInMemoryState();
+    render();
   }
+
+  setAuthUI?.();
+  setGateUI?.();
 }
 
 let loggingIn = false;
@@ -697,8 +701,6 @@ function initSupabase(){
     // reage a mudanças de sessão
     sb.auth.onAuthStateChange(async (_event, session)=>{
       sbUser = session?.user || null;
-      setAuthUI();
-      setGateUI();
       if (sbUser){
         try{
           state = await load();
@@ -707,10 +709,15 @@ function initSupabase(){
         }catch(e){
           notifyPersistenceError("recarregar cards", e);
           clearInMemoryState();
+          sbUser = null;
+          render();
         }
       } else {
         clearInMemoryState();
+        render();
       }
+      setAuthUI();
+      setGateUI();
     });
 
     setAuthUI();
