@@ -271,7 +271,8 @@ async function load(){
   }catch(e){
     const cached = loadLocalCache(sbUser.id);
     if (cached) return cached;
-    throw e;
+    console.warn("Falha ao buscar cards na nuvem e sem cache local. Exibindo quadro vazio.", e);
+    return seed();
   }
 }
 
@@ -569,9 +570,6 @@ async function doPostLogin(){
 
   sbUser = data?.session?.user || null;
 
-  setAuthUI?.();
-  setGateUI?.();
-
   if (sbUser){
     try{
       state = await load();
@@ -580,10 +578,15 @@ async function doPostLogin(){
     }catch(e){
       notifyPersistenceError("carregar cards", e);
       clearInMemoryState();
+      render();
     }
   } else {
     clearInMemoryState();
+    render();
   }
+
+  setAuthUI?.();
+  setGateUI?.();
 }
 
 let loggingIn = false;
@@ -616,12 +619,22 @@ loginBtn?.addEventListener("click", async () => {
 
     const res = await signInWithPassword(email, pass);
 
-    // se logou, atualiza tudo na marra (sem depender de evento)
-    
+    // aplica usuário retornado imediatamente quando disponível
+    if (res?.user) sbUser = res.user;
+
+    // sincroniza sessão/UI sem depender apenas do evento assíncrono
     await doPostLogin();
 
-    // se ainda assim não tiver user, explica
-    if (!sbUser) throw new Error("Login não retornou usuário. Se sua conta exige confirmação de e-mail, confirme primeiro.");
+    // fallback: em alguns ambientes a sessão pode demorar milissegundos para propagar
+    if (!sbUser){
+      await new Promise(r => setTimeout(r, 250));
+      await doPostLogin();
+    }
+
+    // se ainda assim não houver sessão, informa sem travar o fluxo
+    if (!sbUser){
+      alert("Login concluído, mas não foi possível confirmar a sessão agora. Se sua conta exige confirmação de e-mail, confirme primeiro e tente novamente.");
+    }
   }catch(e){
     alert("Erro ao entrar: " + (e?.message || String(e)));
   }finally{
@@ -697,8 +710,6 @@ function initSupabase(){
     // reage a mudanças de sessão
     sb.auth.onAuthStateChange(async (_event, session)=>{
       sbUser = session?.user || null;
-      setAuthUI();
-      setGateUI();
       if (sbUser){
         try{
           state = await load();
@@ -707,10 +718,14 @@ function initSupabase(){
         }catch(e){
           notifyPersistenceError("recarregar cards", e);
           clearInMemoryState();
+          render();
         }
       } else {
         clearInMemoryState();
+        render();
       }
+      setAuthUI();
+      setGateUI();
     });
 
     setAuthUI();
